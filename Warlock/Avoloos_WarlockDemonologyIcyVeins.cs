@@ -90,7 +90,7 @@ namespace ReBot
                 "Soul Fire",
                 () =>  
                    (Target.HealthFraction <= 0.25)
-                || (HasAura("Molten Core", true, minMoltenStacksForSoulfire))
+                || (Me.HasAura("Molten Core", true, minMoltenStacksForSoulfire))
             )) return true;
             
             // TODO: find a way to check if the Felguard is IN a group of adds...
@@ -183,7 +183,7 @@ namespace ReBot
                 "Soul Fire",
                 () =>
                    (Target.HealthFraction <= 0.25)
-                || (HasAura("Molten Core", true, minMoltenStacksForSoulfire))
+                || (Me.HasAura("Molten Core", true, minMoltenStacksForSoulfire))
             )) return;
 
             if (Me.HasAura("Metamorphosis"))

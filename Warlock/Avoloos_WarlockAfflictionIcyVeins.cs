@@ -13,6 +13,9 @@ namespace ReBot
     [Rotation("Warlock Affliction - Icy Veins Profile", "Avoloos", WoWClass.Warlock, Specialization.WarlockAffliction, 40)]
     public class Avoloos_WarlockAfflictionIcyVeins : WarlockBaseRotation
     {
+        [JsonProperty("Automatic mana-management through Life Tap")]
+        public bool AutomaticManaManagement = true;
+
         public Avoloos_WarlockAfflictionIcyVeins()
         {
             GroupBuffs = new[]
@@ -78,6 +81,8 @@ namespace ReBot
             if (doGlobalStuff()) return;
             if (doSomePetAndHealingStuff()) return;
 
+            // Mana management
+            if (AutomaticManaManagement && CastSelfPreventDouble("Life Tap", () => Me.HealthFraction >= 0.65 && Me.Mana <= Me.Health * 0.16, 20)) return;
 
             //if (CurrentBotName == "PvP" && Cast("Drain Life", () => Me.HealthFraction <= 0.45 && Me.HasAura("Soulburn"))) return;
             if (CurrentBotName == "PvP" && CastFearIfFeasible()) return;

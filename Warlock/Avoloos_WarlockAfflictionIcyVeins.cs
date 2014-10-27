@@ -76,18 +76,10 @@ namespace ReBot
         public override void Combat()
         {
             if (doGlobalStuff()) return;
+            if (doSomePetAndHealingStuff()) return;
 
-            //Heal
-            if (Cast("Mortal Coil", () => Me.HealthFraction <= 0.5)) return;
-            if (CastSelf("Dark Regeneration", () => Me.HealthFraction <= 0.6)) return;
-            
-            if (CastSelf("Howl of Terror", () => Target.IsPlayer && Target.DistanceSquared <= 8 * 8 || Adds.Any(x => x.IsPlayer && x.DistanceSquared <= 8 * 8))) return;
-            if (Cast("Summon Doomguard", () => Me.HpLessThanOrElite(0.5))) return;
-            if (CastSelf("Demonic Rebirth", () => Me.HealthFraction < 0.9 && Target.IsInCombatRangeAndLoS)) return;
 
-            if (Cast("Drain Life", () => Me.HealthFraction <= 0.35 && Me.HasAura("Soulburn"))) return;
-            if (Cast("Drain Life", () => Me.HealthFraction <= 0.6 && Me.HasAura("Soulburn"))) return;
-
+            //if (CurrentBotName == "PvP" && Cast("Drain Life", () => Me.HealthFraction <= 0.45 && Me.HasAura("Soulburn"))) return;
             if (CurrentBotName == "PvP" && CastFearIfFeasible()) return;
 
             //Adds

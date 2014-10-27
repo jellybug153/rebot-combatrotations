@@ -6,11 +6,12 @@ using ReBot.API;
 using WarlockCommon;
 using System;
 using System.Collections.Generic;
+using Avoloos.Warlock;
 
 namespace ReBot
 {
     [Rotation("Warlock Affliction - Icy Veins Profile", "Avoloos", WoWClass.Warlock, Specialization.WarlockAffliction, 40)]
-    public class Avoloos_WarlockAfflictionIcyVeins : Avoloos_WarlockBaseRotation
+    public class Avoloos_WarlockAfflictionIcyVeins : WarlockBaseRotation
     {
         public Avoloos_WarlockAfflictionIcyVeins()
         {

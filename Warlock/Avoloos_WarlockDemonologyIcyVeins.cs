@@ -5,12 +5,12 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using ReBot.API;
 using WarlockCommon;
-
+using Avoloos.Warlock;
 
 namespace ReBot
 {
     [Rotation("Warlock Demonology - Icy Veins Profile", "Avoloos", WoWClass.Warlock, Specialization.WarlockDemonology, 40)]
-    public sealed class Avoloos_WarlockDemonologyIcyVeins : Avoloos_WarlockBaseRotation
+    public sealed class Avoloos_WarlockDemonologyIcyVeins : WarlockBaseRotation
     {
         // If this value is true Hand of Guldan will be cast, else it will not.
         private bool handOfGuldanSpellLock = false;

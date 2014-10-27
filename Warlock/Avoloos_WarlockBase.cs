@@ -7,7 +7,7 @@ using WarlockCommon;
 using System;
 using System.Collections.Generic;
 
-namespace ReBot
+namespace Avoloos
 {
     public class ExpirableUnitObject
     {
@@ -27,209 +27,215 @@ namespace ReBot
             return DateTime.Now.Millisecond >= TimeCreated.Millisecond + ExpiresIn;
         }
     }
+}
 
-    abstract public class Avoloos_WarlockBaseRotation : CombatRotation
+namespace Avoloos
+{
+    namespace Warlock
     {
-        [JsonProperty("SelectedPet"), JsonConverter(typeof(StringEnumConverter))]
-        public WarlockPet SelectedPet = WarlockPet.AutoSelect;
-        [JsonProperty("UsePet")]
-        public bool UsePet = true;
-        [JsonProperty("UseAdditionalDPSPet")]
-        public bool UseAdditionalDPSPet = true;
-        [JsonProperty("PvP-FearBanTime")]
-        public int FearBanTime = 10000;
-
-        protected List<ExpirableUnitObject> fearTrackingList;
-
-        protected bool CastFearIfFeasible()
+        abstract public class WarlockBaseRotation : CombatRotation
         {
-            fearTrackingList = fearTrackingList.Where(x => !x.IsExpired()).ToList(); // trim the list to all non expired feared objects.
+            [JsonProperty("SelectedPet"), JsonConverter(typeof(StringEnumConverter))]
+            public WarlockPet SelectedPet = WarlockPet.AutoSelect;
+            [JsonProperty("UsePet")]
+            public bool UsePet = true;
+            [JsonProperty("UseAdditionalDPSPet")]
+            public bool UseAdditionalDPSPet = true;
+            [JsonProperty("PvP-FearBanTime")]
+            public int FearBanTime = 10000;
 
-            // TODO: Find out which on eis the right one...
-            //if (CastSelf("Howl of Terror", () => Target.IsPlayer && Target.DistanceSquared <= 8 * 8 || Adds.Any(x => x.IsPlayer && x.DistanceSquared <= 8 * 8))) return true;
-            if (CastSelf("Howl of Terror", () => Adds.Count(x => x.DistanceSquared < 11 * 11) >= 2))
+            protected List<ExpirableUnitObject> fearTrackingList;
+
+            protected bool CastFearIfFeasible()
             {
-                foreach (var fearedAdd in Adds.Where(x => x.DistanceSquared < 11 * 11))
+                fearTrackingList = fearTrackingList.Where(x => !x.IsExpired()).ToList(); // trim the list to all non expired feared objects.
+
+                // TODO: Find out which on eis the right one...
+                //if (CastSelf("Howl of Terror", () => Target.IsPlayer && Target.DistanceSquared <= 8 * 8 || Adds.Any(x => x.IsPlayer && x.DistanceSquared <= 8 * 8))) return true;
+                if (CastSelf("Howl of Terror", () => Adds.Count(x => x.DistanceSquared < 11 * 11) >= 2))
                 {
-                    fearTrackingList.Add(new ExpirableUnitObject(fearedAdd, FearBanTime));
-                } // Do not fear them again (at least not with feat, howl of terror won't be affected by its fear descision, for the moment...)
-                return true;
+                    foreach (var fearedAdd in Adds.Where(x => x.DistanceSquared < 11 * 11))
+                    {
+                        fearTrackingList.Add(new ExpirableUnitObject(fearedAdd, FearBanTime));
+                    } // Do not fear them again (at least not with feat, howl of terror won't be affected by its fear descision, for the moment...)
+                    return true;
+                }
+
+                foreach (var add in Adds.Where(x => x.HasAura("Fear") && fearTrackingList.Count((y) => y.Unit == x) == 0))
+                {
+                    // Add feared adds which were not feared by us
+                    fearTrackingList.Add(new ExpirableUnitObject(add, FearBanTime));
+                }
+
+                UnitObject add2 = Adds.FirstOrDefault(x => x.Target != null && x.DistanceSquared <= SpellMaxRangeSq("Fear"));
+                if (add2 != null && add2.DistanceSquared < SpellMaxRangeSq("Fear"))
+                {
+                    var add = add2;
+                    // Fear only real close targets which attack us
+                    if (CastPreventDouble(
+                        "Fear", () =>
+                               (!add.HasAura("Fear")                             // its not already feared by other ppl.
+                            && !add.HasAura("Howl of Terror")                    // and its not already feared by howl
+                            && Target.DistanceSquared <= 6.5 * 6.5               // and its close
+                            && add.Target == Me                                  // and its targetting me
+                            || add.IsCastingAndInterruptible())                  // or its casting and we can interrupt it with fear :D
+                            && fearTrackingList.Count((x) => x.Unit == add) == 0 // and its not banned from fear
+                        , add, 1000
+                    )) return true;
+                }
+
+                return false;
             }
 
-            foreach (var add in Adds.Where(x => x.HasAura("Fear") && fearTrackingList.Count((y) => y.Unit == x) == 0))
+            protected bool HasFelguard()
             {
-                // Add feared adds which were not feared by us
-                fearTrackingList.Add(new ExpirableUnitObject(add, FearBanTime));
+                return ((Me.Pet.EntryID == 17252) || (Me.Pet.EntryID == 58965));
             }
 
-            UnitObject add2 = Adds.FirstOrDefault(x => x.Target != null && x.DistanceSquared <= SpellMaxRangeSq("Fear"));
-            if (add2 != null && add2.DistanceSquared < SpellMaxRangeSq("Fear"))
+            protected bool CastOnAdds(string spellName)
             {
-                var add = add2;
-                // Fear only real close targets which attack us
-                if (CastPreventDouble(
-                    "Fear", () =>
-                           (!add.HasAura("Fear")                             // its not already feared by other ppl.
-                        && !add.HasAura("Howl of Terror")                    // and its not already feared by howl
-                        && Target.DistanceSquared <= 6.5 * 6.5               // and its close
-                        && add.Target == Me                                  // and its targetting me
-                        || add.IsCastingAndInterruptible())                  // or its casting and we can interrupt it with fear :D
-                        && fearTrackingList.Count((x) => x.Unit == add) == 0 // and its not banned from fear
-                    , add, 1000
-                )) return true;
+                foreach (var add in Adds)
+                {
+                    if (Cast(
+                        spellName,
+                        add
+                    )) return true;
+                }
+                return false;
             }
 
-            return false;
-        }
-
-        protected bool HasFelguard()
-        {
-            return ((Me.Pet.EntryID == 17252) || (Me.Pet.EntryID == 58965));
-        }
-
-        protected bool CastOnAdds(string spellName)
-        {
-            foreach (var add in Adds)
+            protected bool CastOnAdds(string spellName, Func<ReBot.API.UnitObject, bool> castCondition)
             {
-                if (Cast(
-                    spellName,
-                    add
-                )) return true;
+                foreach (var add in Adds)
+                {
+                    if (Cast(
+                        spellName,
+                        () => castCondition(add),
+                        add
+                    )) return true;
+                }
+                return false;
             }
-            return false;
-        }
 
-        protected bool CastOnAdds(string spellName, Func<ReBot.API.UnitObject, bool> castCondition)
-        {
-            foreach (var add in Adds)
+            protected bool CastOnAdds(string spellName, Func<ReBot.API.UnitObject, bool> castCondition, Func<ReBot.API.UnitObject, bool> addsCondition)
             {
-                if (Cast(
-                    spellName,
-                    () => castCondition(add),
-                    add
-                )) return true;
+                foreach (var add in Adds.Where(addsCondition))
+                {
+                    if (Cast(
+                        spellName,
+                        () => castCondition(add),
+                        add
+                    )) return true;
+                }
+                return false;
             }
-            return false;
-        }
 
-        protected bool CastOnAdds(string spellName, Func<ReBot.API.UnitObject, bool> castCondition, Func<ReBot.API.UnitObject, bool> addsCondition)
-        {
-            foreach (var add in Adds.Where(addsCondition))
+            protected bool CastPreventDoubleOnAdds(string spellName, Func<ReBot.API.UnitObject, bool> castCondition)
             {
-                if (Cast(
-                    spellName,
-                    () => castCondition(add),
-                    add
-                )) return true;
+                foreach (var add in Adds)
+                {
+                    if (CastPreventDouble(
+                        spellName,
+                        () => castCondition(add),
+                        add
+                    )) return true;
+                }
+                return false;
             }
-            return false;
-        }
 
-        protected bool CastPreventDoubleOnAdds(string spellName, Func<ReBot.API.UnitObject, bool> castCondition)
-        {
-            foreach (var add in Adds)
+            protected bool CastPreventDoubleOnAdds(string spellName, Func<ReBot.API.UnitObject, bool> castCondition, Func<ReBot.API.UnitObject, bool> addsCondition)
             {
-                if (CastPreventDouble(
-                    spellName,
-                    () => castCondition(add),
-                    add
-                )) return true;
+                foreach (var add in Adds.Where(addsCondition))
+                {
+                    if (CastPreventDouble(
+                        spellName,
+                        () => castCondition(add),
+                        add
+                    )) return true;
+                }
+                return false;
             }
-            return false;
-        }
 
-        protected bool CastPreventDoubleOnAdds(string spellName, Func<ReBot.API.UnitObject, bool> castCondition, Func<ReBot.API.UnitObject, bool> addsCondition)
-        {
-            foreach (var add in Adds.Where(addsCondition))
+            public override bool OutOfCombat()
             {
-                if (CastPreventDouble(
-                    spellName,
-                    () => castCondition(add),
-                    add
-                )) return true;
+                if (HasSpell("Fire and Brimstone") && CastSelf("Fire and Brimstone", () => HasAura("Fire and Brimstone")) && HasGlobalCooldown()) return true;
+                if (CastSelf("Dark Intent", () => !HasAura("Dark Intent"))) return true;
+                if (CastSelf("Unending Breath", () => Me.IsSwimming && !HasAura("Unending Breath"))) return true;
+                if (CastSelf("Soulstone", () => CurrentBotName != "Combat" && !HasAura("Soulstone"))) return true;
+
+                if (HasSpell("Grimoire of Sacrifice") && !HasAura("Grimoire of Sacrifice"))
+                {
+                    if (this.SummonPet(SelectedPet)) return true;
+                    if (CastSelf("Grimoire of Sacrifice", () => Me.HasAlivePet)) return true;
+                }
+                else if (UsePet)
+                {
+                    if (HasSpell("Flames of Xoroth") && CastSelf("Flames of Xoroth", () => !Me.HasAlivePet && Me.GetPower(WoWPowerType.WarlockDestructionBurningEmbers) >= 1)) return true;
+                    if (this.SummonPet(SelectedPet)) return true;
+                }
+                else if (Me.HasAlivePet)
+                {
+                    Me.PetDismiss();
+                }
+
+                if (CastSelfPreventDouble("Create Healthstone", () => Inventory.Healthstone == null, 10000)) return true;
+
+                return false;
             }
-            return false;
-        }
 
-        public override bool OutOfCombat()
-        {
-            if (HasSpell("Fire and Brimstone") && CastSelf("Fire and Brimstone", () => HasAura("Fire and Brimstone")) && HasGlobalCooldown()) return true; 
-            if (CastSelf("Dark Intent", () => !HasAura("Dark Intent"))) return true;
-            if (CastSelf("Unending Breath", () => Me.IsSwimming && !HasAura("Unending Breath"))) return true;
-            if (CastSelf("Soulstone", () => CurrentBotName != "Combat" && !HasAura("Soulstone"))) return true;
-
-            if (HasSpell("Grimoire of Sacrifice") && !HasAura("Grimoire of Sacrifice"))
+            public override bool AfterCombat()
             {
-                if (this.SummonPet(SelectedPet)) return true;
-                if (CastSelf("Grimoire of Sacrifice", () => Me.HasAlivePet)) return true;
+                if (HasSpell("Fire and Brimstone") && CastSelf("Fire and Brimstone", () => HasAura("Fire and Brimstone"))) return true;
+                if (HasSpell("Metamorphosis") && CastSelf("Metamorphosis", () => HasAura("Metamorphosis"))) return true;
+                return false;
             }
-            else if (UsePet)
+
+            protected bool doGlobalStuff()
             {
-                if (HasSpell("Flames of Xoroth") && CastSelf("Flames of Xoroth", () => !Me.HasAlivePet && Me.GetPower(WoWPowerType.WarlockDestructionBurningEmbers) >= 1)) return true;
-                if (this.SummonPet(SelectedPet)) return true;
+                //no globalcd
+                if (HasSpell("Dark Soul: Instability")) CastSelf("Dark Soul: Instability", () => Target.IsInCombatRangeAndLoS);
+                if (HasSpell("Dark Soul: Knowledge")) CastSelf("Dark Soul: Knowledge", () => Target.IsInCombatRangeAndLoS);
+                if (HasSpell("Dark Soul: Misery")) CastSelf("Dark Soul: Misery", () => Target.IsInCombatRangeAndLoS);
+
+                Cast("Command Demon", () => (this.IsPetActive("Summon Felhunter") || SelectedPet == WarlockPet.Felhunter) && Target.IsCastingAndInterruptible());
+                Cast("Command Demon", () => !HasSpell("Grimoire of Sacrifice") && (this.IsPetActive("Summon Imp") || SelectedPet == WarlockPet.SoulImp) && Me.HealthFraction <= 0.75);
+                Cast("Command Demon", () => (this.IsPetActive("Summon Voidwalker") || SelectedPet == WarlockPet.Voidwalker) && Me.HealthFraction < 0.5);
+                Cast("Axe Toss", () => HasFelguard() && Target.IsCastingAndInterruptible()); // Should have no gc as its a pet ability
+
+                //Heal
+                if (HasSpell("Unbound Will")) CastSelf("Unbound Will", () => !Me.CanParticipateInCombat); //no gc
+                if (HasSpell("Dark Bargain")) CastSelf("Dark Bargain", () => Me.HealthFraction < 0.5); //no gc
+                if (HasSpell("Sacrificial Pact")) CastSelf("Sacrificial Pact", () => Me.HealthFraction < 0.6); //no gc
+                if (HasSpell("Unending Resolve")) CastSelf("Unending Resolve", () => Me.HealthFraction <= 0.5); //no gc
+
+                if (Me.HasAlivePet)
+                {
+                    UnitObject add = Adds.FirstOrDefault(x => x.Target == Me);
+                    if (add != null)
+                        Me.PetAttack(add);
+                }
+
+                //GLOBAL CD CHECK
+                if (HasGlobalCooldown())
+                    return true;
+
+                return false;
             }
-            else if (Me.HasAlivePet)
+
+            protected bool doSomePetAndHealingStuff()
             {
-                Me.PetDismiss();
+                if (HasSpell("Mortal Coil") && Cast("Mortal Coil", () => Me.HealthFraction <= 0.5)) return true;
+                if (HasSpell("Dark Regeneration") && CastSelf("Dark Regeneration", () => Me.HealthFraction <= 0.6)) return true;
+                if (HasSpell("Flames of Xoroth") && CastSelf("Flames of Xoroth", () => !HasSpell("Grimoire of Sacrifice") && !Me.HasAlivePet && Me.GetPower(WoWPowerType.WarlockDestructionBurningEmbers) >= 1)) return true;
+                if (UseAdditionalDPSPet && HasSpell("Summon Terrorguard") && Cast("Summon Terrorguard", () => Me.HpLessThanOrElite(0.5))) return true;
+                if (UseAdditionalDPSPet && HasSpell("Summon Doomguard") && Cast("Summon Doomguard", () => Me.HpLessThanOrElite(0.5))) return true;
+                if (UseAdditionalDPSPet && HasSpell("Summon Infernal") && Cast("Summon Infernal", () => Me.HpLessThanOrElite(0.5) || Adds.Count >= 4)) return true;
+                if (UseAdditionalDPSPet && HasSpell("Summon Abyssal") && Cast("Summon Abyssal", () => Me.HpLessThanOrElite(0.5) || Adds.Count >= 4)) return true;
+                if (HasSpell("Demonic Rebirth") && CastSelf("Demonic Rebirth", () => Me.HealthFraction < 0.9 && Target.IsInCombatRangeAndLoS)) return true;
+                if (HasSpell("Ember Tap") && CastSelf("Ember Tap", () => Me.HealthFraction <= 0.35 && Me.GetPower(WoWPowerType.WarlockDestructionBurningEmbers) >= 1)) return true;
+
+                return false;
             }
-
-            if (CastSelfPreventDouble("Create Healthstone", () => Inventory.Healthstone == null, 10000)) return true;
-
-            return false;
-        }
-
-        public override bool AfterCombat()
-        {
-            if (HasSpell("Fire and Brimstone") && CastSelf("Fire and Brimstone", () => HasAura("Fire and Brimstone"))) return true;
-            if (HasSpell("Metamorphosis") && CastSelf("Metamorphosis", () => HasAura("Metamorphosis"))) return true;
-            return false;
-        }
-
-        protected bool doGlobalStuff()
-        {
-            //no globalcd
-            if (HasSpell("Dark Soul: Instability")) CastSelf("Dark Soul: Instability", () => Target.IsInCombatRangeAndLoS);
-            if (HasSpell("Dark Soul: Knowledge")) CastSelf("Dark Soul: Knowledge", () => Target.IsInCombatRangeAndLoS);
-            if (HasSpell("Dark Soul: Misery")) CastSelf("Dark Soul: Misery", () => Target.IsInCombatRangeAndLoS);
-            
-            Cast("Command Demon", () => (this.IsPetActive("Summon Felhunter") || SelectedPet == WarlockPet.Felhunter) && Target.IsCastingAndInterruptible());
-            Cast("Command Demon", () => !HasSpell("Grimoire of Sacrifice") && (this.IsPetActive("Summon Imp") || SelectedPet == WarlockPet.SoulImp) && Me.HealthFraction <= 0.75);
-            Cast("Command Demon", () => (this.IsPetActive("Summon Voidwalker") || SelectedPet == WarlockPet.Voidwalker) && Me.HealthFraction < 0.5);
-            Cast("Axe Toss", () => HasFelguard() && Target.IsCastingAndInterruptible()); // Should have no gc as its a pet ability
-
-            //Heal
-            if (HasSpell("Unbound Will")) CastSelf("Unbound Will", () => !Me.CanParticipateInCombat); //no gc
-            if (HasSpell("Dark Bargain")) CastSelf("Dark Bargain", () => Me.HealthFraction < 0.5); //no gc
-            if (HasSpell("Sacrificial Pact")) CastSelf("Sacrificial Pact", () => Me.HealthFraction < 0.6); //no gc
-            if (HasSpell("Unending Resolve")) CastSelf("Unending Resolve", () => Me.HealthFraction <= 0.5); //no gc
-
-            if (Me.HasAlivePet)
-            {
-                UnitObject add = Adds.FirstOrDefault(x => x.Target == Me);
-                if (add != null)
-                    Me.PetAttack(add);
-            }
-
-            //GLOBAL CD CHECK
-            if (HasGlobalCooldown())
-                return true;
-
-            return false;
-        }
-
-        protected bool doSomePetAndHealingStuff()
-        {
-            if (HasSpell("Mortal Coil") && Cast("Mortal Coil", () => Me.HealthFraction <= 0.5)) return true;
-            if (HasSpell("Dark Regeneration") && CastSelf("Dark Regeneration", () => Me.HealthFraction <= 0.6)) return true;
-            if (HasSpell("Flames of Xoroth") && CastSelf("Flames of Xoroth", () => !HasSpell("Grimoire of Sacrifice") && !Me.HasAlivePet && Me.GetPower(WoWPowerType.WarlockDestructionBurningEmbers) >= 1)) return true;
-            if (UseAdditionalDPSPet && HasSpell("Summon Terrorguard") && Cast("Summon Terrorguard", () => Me.HpLessThanOrElite(0.5))) return true;
-            if (UseAdditionalDPSPet && HasSpell("Summon Doomguard") && Cast("Summon Doomguard", () => Me.HpLessThanOrElite(0.5))) return true;
-            if (UseAdditionalDPSPet && HasSpell("Summon Infernal") && Cast("Summon Infernal", () => Me.HpLessThanOrElite(0.5) || Adds.Count >= 4)) return true;
-            if (UseAdditionalDPSPet && HasSpell("Summon Abyssal") && Cast("Summon Abyssal", () => Me.HpLessThanOrElite(0.5) || Adds.Count >= 4)) return true;
-            if (HasSpell("Demonic Rebirth") && CastSelf("Demonic Rebirth", () => Me.HealthFraction < 0.9 && Target.IsInCombatRangeAndLoS)) return true;
-            if (HasSpell("Ember Tap") && CastSelf("Ember Tap", () => Me.HealthFraction <= 0.35 && Me.GetPower(WoWPowerType.WarlockDestructionBurningEmbers) >= 1)) return true;
-
-            return false;
         }
     }
 }

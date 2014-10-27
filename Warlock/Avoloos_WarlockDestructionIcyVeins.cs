@@ -5,11 +5,12 @@ using Newtonsoft.Json.Converters;
 using ReBot.API;
 using WarlockCommon;
 using System;
+using Avoloos.Warlock;
 
 namespace ReBot
 {
     [Rotation("Warlock Destruction - Icy Veins Profile", "Avoloos", WoWClass.Warlock, Specialization.WarlockDestruction, 40)]
-    public class Avoloos_WarlockDestructionIcyVeins : Avoloos_WarlockBaseRotation
+    public class Avoloos_WarlockDestructionIcyVeins : WarlockBaseRotation
 	{
         public Avoloos_WarlockDestructionIcyVeins()
 		{

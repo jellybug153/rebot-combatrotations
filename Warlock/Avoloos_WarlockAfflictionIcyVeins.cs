@@ -85,8 +85,8 @@ namespace ReBot
             if (Cast("Summon Doomguard", () => Me.HpLessThanOrElite(0.5))) return;
             if (CastSelf("Demonic Rebirth", () => Me.HealthFraction < 0.9 && Target.IsInCombatRangeAndLoS)) return;
 
-            if (Cast("Drain Life", () => Me.HealthFraction <= 0.35 && HasAura("Soulburn"))) return;
-            if (Cast("Drain Life", () => Me.HealthFraction <= 0.6 && HasAura("Soulburn"))) return;
+            if (Cast("Drain Life", () => Me.HealthFraction <= 0.35 && Me.HasAura("Soulburn"))) return;
+            if (Cast("Drain Life", () => Me.HealthFraction <= 0.6 && Me.HasAura("Soulburn"))) return;
 
             if (CurrentBotName == "PvP" && CastFearIfFeasible()) return;
 

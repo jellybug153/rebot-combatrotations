@@ -120,7 +120,7 @@ namespace ReBot
                 if (CastSelf(
                     "Metamorphosis",
                     () =>
-                       (currentFury < 750 && !HasAura("Dark Soul: Knowledge"))
+                       (currentFury < 750 && !Me.HasAura("Dark Soul: Knowledge"))
                     || (SpellCooldown("Metamorphosis") == 0 && !Me.InCombat)
                 )) return true;
             }
@@ -193,7 +193,6 @@ namespace ReBot
             
             //if nothing was cast, then cast the good old shadow bolt
             Cast("Shadow Bolt");
-           
         }
     }
 }

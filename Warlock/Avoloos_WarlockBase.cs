@@ -158,12 +158,12 @@ namespace Avoloos
 
             public override bool OutOfCombat()
             {
-                if (HasSpell("Fire and Brimstone") && CastSelf("Fire and Brimstone", () => HasAura("Fire and Brimstone")) && HasGlobalCooldown()) return true;
-                if (CastSelf("Dark Intent", () => !HasAura("Dark Intent"))) return true;
-                if (CastSelf("Unending Breath", () => Me.IsSwimming && !HasAura("Unending Breath"))) return true;
-                if (CastSelf("Soulstone", () => CurrentBotName != "Combat" && !HasAura("Soulstone"))) return true;
+                if (HasSpell("Fire and Brimstone") && CastSelf("Fire and Brimstone", () => Me.HasAura("Fire and Brimstone")) && HasGlobalCooldown()) return true;
+                if (CastSelf("Dark Intent", () => !Me.HasAura("Dark Intent"))) return true;
+                if (CastSelf("Unending Breath", () => Me.IsSwimming && !Me.HasAura("Unending Breath"))) return true;
+                if (CastSelf("Soulstone", () => CurrentBotName != "Combat" && !Me.HasAura("Soulstone"))) return true;
 
-                if (HasSpell("Grimoire of Sacrifice") && !HasAura("Grimoire of Sacrifice"))
+                if (HasSpell("Grimoire of Sacrifice") && !Me.HasAura("Grimoire of Sacrifice"))
                 {
                     if (this.SummonPet(SelectedPet)) return true;
                     if (CastSelf("Grimoire of Sacrifice", () => Me.HasAlivePet)) return true;
@@ -185,8 +185,8 @@ namespace Avoloos
 
             public override bool AfterCombat()
             {
-                if (HasSpell("Fire and Brimstone") && CastSelf("Fire and Brimstone", () => HasAura("Fire and Brimstone"))) return true;
-                if (HasSpell("Metamorphosis") && CastSelf("Metamorphosis", () => HasAura("Metamorphosis"))) return true;
+                if (HasSpell("Fire and Brimstone") && CastSelf("Fire and Brimstone", () => Me.HasAura("Fire and Brimstone"))) return true;
+                if (HasSpell("Metamorphosis") && CastSelf("Metamorphosis", () => Me.HasAura("Metamorphosis"))) return true;
                 return false;
             }
 

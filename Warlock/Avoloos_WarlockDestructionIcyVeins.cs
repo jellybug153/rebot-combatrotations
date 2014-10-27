@@ -94,7 +94,7 @@ namespace ReBot
             if (Adds.Count > 0 && doMultitargetRotation(Adds.Count + 1)) return;
 
             // No Multitarget, so please disable Fire and Brimstone.
-            CastSelf("Fire and Brimstone", () => HasAura("Fire and Brimstone"));
+            CastSelf("Fire and Brimstone", () => Me.HasAura("Fire and Brimstone"));
 
             // Priority #1
             if (Cast(

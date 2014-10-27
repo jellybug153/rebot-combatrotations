@@ -193,9 +193,9 @@ namespace Avoloos
             protected bool doGlobalStuff()
             {
                 //no globalcd
-                if (HasSpell("Dark Soul: Instability")) CastSelf("Dark Soul: Instability", () => Target.IsInCombatRangeAndLoS);
-                if (HasSpell("Dark Soul: Knowledge")) CastSelf("Dark Soul: Knowledge", () => Target.IsInCombatRangeAndLoS);
-                if (HasSpell("Dark Soul: Misery")) CastSelf("Dark Soul: Misery", () => Target.IsInCombatRangeAndLoS);
+                if (HasSpell("Dark Soul: Instability")) CastSelfPreventDouble("Dark Soul: Instability", () => Target.IsInCombatRangeAndLoS, 120000);
+                if (HasSpell("Dark Soul: Knowledge")) CastSelfPreventDouble("Dark Soul: Knowledge", () => Target.IsInCombatRangeAndLoS, 120000);
+                if (HasSpell("Dark Soul: Misery")) CastSelfPreventDouble("Dark Soul: Misery", () => Target.IsInCombatRangeAndLoS, 120000);
 
                 Cast("Command Demon", () => (this.IsPetActive("Summon Felhunter") || SelectedPet == WarlockPet.Felhunter) && Target.IsCastingAndInterruptible());
                 Cast("Command Demon", () => !HasSpell("Grimoire of Sacrifice") && (this.IsPetActive("Summon Imp") || SelectedPet == WarlockPet.SoulImp) && Me.HealthFraction <= 0.75);

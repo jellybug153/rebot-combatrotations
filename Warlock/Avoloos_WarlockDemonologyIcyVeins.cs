@@ -70,16 +70,18 @@ namespace ReBot
             
             if(dotAllTargets)
             { // Do all the Adds dotting.
-                if(CastOnAdds(
-                    "Corruption",
-                    (add) => (add.HpGreaterThanOrElite(0.15) && (!add.HasAura("Corruption") || add.AuraTimeRemaining("Corruption") <= 6f))
-                )) return true;
-                
                 if(Me.HasAura("Metamorphosis"))
                 {
                     if(CastOnAdds(
                         "Doom",
-                        (add) => (add.HpGreaterThanOrElite(0.15) && (!add.HasAura("Corruption") || add.AuraTimeRemaining("Corruption") <= 18f))
+                        (add) => (add.HpGreaterThanOrElite(0.15) && (!add.HasAura("Doom") || add.AuraTimeRemaining("Doom") <= 18f))
+                    )) return true;
+                }
+                else
+                {
+                    if (CastOnAdds(
+                        "Corruption",
+                        (add) => (add.HpGreaterThanOrElite(0.15) && (!add.HasAura("Corruption") || add.AuraTimeRemaining("Corruption") <= 6f))
                     )) return true;
                 }
             }
@@ -152,10 +154,20 @@ namespace ReBot
             // Icy Veins Rotation
             if(Adds.Count > 0 && doMultiTargetRotation(Adds.Count + 1)) return;
 
-            if (Cast(
-                "Corruption",
-                () => (Target.HpGreaterThanOrElite(0.15) && (!Target.HasAura("Corruption") || Target.AuraTimeRemaining("Corruption") <= 6f))
-            )) return;
+            if (Me.HasAura("Metamorphosis"))
+            {
+                if (Cast(
+                    "Doom",
+                    () => (Target.HpGreaterThanOrElite(0.15) && (!Target.HasAura("Doom") || Target.AuraTimeRemaining("Doom") <= 18f))
+                )) return;
+            }
+            else
+            {
+                if(Cast(
+                    "Corruption",
+                    () => (Target.HpGreaterThanOrElite(0.15) && (!Target.HasAura("Corruption") || Target.AuraTimeRemaining("Corruption") <= 6f))
+                )) return;
+            }
 
             // Always do Hand of Gul'dan id available and before tick ends
             // highest prio!
@@ -174,8 +186,14 @@ namespace ReBot
                 || (HasAura("Molten Core", true, minMoltenStacksForSoulfire))
             )) return;
 
+            if (Me.HasAura("Metamorphosis"))
+            {
+                if (Cast("Touch of Chaos")) return;
+            }
+            
             //if nothing was cast, then cast the good old shadow bolt
             Cast("Shadow Bolt");
+           
         }
     }
 }

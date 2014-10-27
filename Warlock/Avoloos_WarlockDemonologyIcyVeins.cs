@@ -101,10 +101,15 @@ namespace ReBot
             )) return true;
             
             // TODO: find a way to get close to the enemies (leap there?)
-            if(CastPreventDouble(
-                "Immolation Aura", 
+
+            if (CastPreventDouble(
+                "Immolation Aura",
                 () => doImmolationAura
             )) return true;
+            if (CastPreventDouble(
+               "Hellfire",
+               () => doHellfire
+           )) return true;
             
             // TODO: find a way to integrate Chaos Wave if targets are easy
             
@@ -115,7 +120,7 @@ namespace ReBot
         {
             var currentFury = Me.GetPower(WoWPowerType.WarlockDemonicFury);
 
-            if (HasAura("Metamorphosis"))
+            if (Me.HasAura("Metamorphosis"))
             {
                 if (CastSelf(
                     "Metamorphosis",
@@ -130,9 +135,11 @@ namespace ReBot
                 if (CastSelf(
                     "Metamorphosis",
                     () =>
-                        (currentFury >= 900)
-                     || (currentFury >= 400 && Me.HasAura("Dark Soul: Knowledge"))
-
+                        Me.InCombat
+                        && (
+                            (currentFury >= 850)
+                         || (currentFury >= 400 && Me.HasAura("Dark Soul: Knowledge"))
+                        ) 
                 )) return true;
             }
 

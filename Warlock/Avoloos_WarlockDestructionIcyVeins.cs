@@ -35,7 +35,7 @@ namespace ReBot
             if (CastOnTerrain("Shadowfury", Target.Position, () => Adds.Count(x => x.DistanceSquaredTo(Target) <= 12 * 12) > 2)) return true;
            
             // Priority #1
-            if (Me.HasSpell("Aftermath") && CastOnTerrainPreventDouble("Rain of Fire", Target.Position, null, 7500)) return true;
+            if (HasSpell("Aftermath") && CastOnTerrainPreventDouble("Rain of Fire", Target.Position, null, 7500)) return true;
 
             // Priority #2
             if (
@@ -133,7 +133,7 @@ namespace ReBot
 
             // Priority #6
             // TODO: remember old cast position and check with target position and radius so we recast it when he gets out of the rain
-            if (Me.HasSpell("Aftermath") && CastOnTerrainPreventDouble("Rain of Fire", Target.Position, null, 7500)) return;
+            if (HasSpell("Aftermath") && CastOnTerrainPreventDouble("Rain of Fire", Target.Position, null, 7500)) return;
 
             // Priority #7
             // Conflagrate is already done in #3

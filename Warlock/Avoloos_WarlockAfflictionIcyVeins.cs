@@ -119,7 +119,7 @@ namespace ReBot
         private bool doDotting(UnitObject u)
         {
             if (Cast("Agony", () => Target.HpGreaterThanOrElite(0.3) && (!Target.HasAura("Agony") || Target.AuraTimeRemaining("Unstable Affliction") <= 7f))) return true;
-            if (Cast("Corruption", () => Target.HpGreaterThanOrElite(0.15) && (!Target.HasAura("Corruption") || Target.AuraTimeRemaining("Unstable Affliction") <= 5f))) return true;
+            if (Cast("Corruption", () => Target.HpGreaterThanOrElite(0.15) && (!Target.HasAura("Corruption") || Target.AuraTimeRemaining("Corruption") <= 5f))) return true;
             if (CastPreventDouble("Unstable Affliction", () => Target.HpGreaterThanOrElite(0.2) && (!Target.HasAura("Unstable Affliction") || Target.AuraTimeRemaining("Unstable Affliction") <= 5f))) return true;
             return false;
         }

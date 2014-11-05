@@ -41,30 +41,46 @@ namespace Avoloos
             public bool UsePet = true;
             [JsonProperty("UseAdditionalDPSPet")]
             public bool UseAdditionalDPSPet = true;
+            
+            [JsonProperty("PvP-DoFear")]
+            public bool FearDoFear = true;
             [JsonProperty("PvP-FearBanTime")]
             public int FearBanTime = 10000;
+            
 
             protected List<ExpirableUnitObject> fearTrackingList;
+            
+            public WarlockBaseRotation()
+            {
+                fearTrackingList = new List<ExpirableUnitObject>();
+            }
 
             protected bool CastFearIfFeasible()
             {
-                fearTrackingList = fearTrackingList.Where(x => !x.IsExpired()).ToList(); // trim the list to all non expired feared objects.
+                if(!FearDoFear) return false;
+                
+                try{
+                    fearTrackingList = fearTrackingList.Where(x => !x.IsExpired()).ToList(); // trim the list to all non expired feared objects.
 
-                // TODO: Find out which on eis the right one...
-                //if (CastSelf("Howl of Terror", () => Target.IsPlayer && Target.DistanceSquared <= 8 * 8 || Adds.Any(x => x.IsPlayer && x.DistanceSquared <= 8 * 8))) return true;
-                if (CastSelf("Howl of Terror", () => Adds.Count(x => x.DistanceSquared < 11 * 11) >= 2))
-                {
-                    foreach (var fearedAdd in Adds.Where(x => x.DistanceSquared < 11 * 11))
+                    // TODO: Find out which one is the right one...
+                    //if (CastSelf("Howl of Terror", () => Target.IsPlayer && Target.DistanceSquared <= 8 * 8 || Adds.Any(x => x.IsPlayer && x.DistanceSquared <= 8 * 8))) return true;
+                    if (CastSelf("Howl of Terror", () => Adds.Count(x => x.DistanceSquared < 11 * 11) >= 2))
                     {
-                        fearTrackingList.Add(new ExpirableUnitObject(fearedAdd, FearBanTime));
-                    } // Do not fear them again (at least not with feat, howl of terror won't be affected by its fear descision, for the moment...)
-                    return true;
-                }
+                        foreach (var fearedAdd in Adds.Where(x => x.DistanceSquared < 11 * 11))
+                        {
+                            fearTrackingList.Add(new ExpirableUnitObject(fearedAdd, FearBanTime));
+                        } // Do not fear them again (at least not with feat, howl of terror won't be affected by its fear descision, for the moment...)
+                        return true;
+                    }
 
-                foreach (var add in Adds.Where(x => x.HasAura("Fear") && fearTrackingList.Count((y) => y.Unit == x) == 0))
-                {
-                    // Add feared adds which were not feared by us
-                    fearTrackingList.Add(new ExpirableUnitObject(add, FearBanTime));
+                    foreach (var add in Adds.Where(x => x.HasAura("Fear") && fearTrackingList.Count((y) => y.Unit == x) == 0))
+                    {
+                        // Add feared adds which were not feared by us
+                        fearTrackingList.Add(new ExpirableUnitObject(add, FearBanTime));
+                    }
+                } catch { // catch everything
+                    API.PrintError("Got an error in fear management logic. Disabling fear for now... Please Report to Avoloos: {0}", e);
+                    FearDoFear = false;
                 }
 
                 UnitObject add2 = Adds.FirstOrDefault(x => x.Target != null && x.DistanceSquared <= SpellMaxRangeSq("Fear"));
@@ -79,7 +95,7 @@ namespace Avoloos
                             && Target.DistanceSquared <= 6.5 * 6.5               // and its close
                             && add.Target == Me                                  // and its targetting me
                             || add.IsCastingAndInterruptible())                  // or its casting and we can interrupt it with fear :D
-                            && fearTrackingList.Count((x) => x.Unit == add) == 0 // and its not banned from fear
+                            && (FearDoFear && fearTrackingList.Count((x) => x.Unit == add) == 0) // and its not banned from fear
                         , add, 1000
                     )) return true;
                 }

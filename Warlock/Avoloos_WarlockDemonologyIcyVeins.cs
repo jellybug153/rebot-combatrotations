@@ -16,7 +16,7 @@ namespace ReBot
         private bool handOfGuldanSpellLock = false;
         private int minMoltenStacksForSoulfire = 5;
 
-        public Avoloos_WarlockDemonologyIcyVeins()
+        public Avoloos_WarlockDemonologyIcyVeins() : base()
         {
             GroupBuffs = new[]
             {

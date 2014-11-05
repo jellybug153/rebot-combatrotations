@@ -12,7 +12,7 @@ namespace ReBot
     [Rotation("Warlock Destruction - Icy Veins Profile", "Avoloos", WoWClass.Warlock, Specialization.WarlockDestruction, 40)]
     public class Avoloos_WarlockDestructionIcyVeins : WarlockBaseRotation
 	{
-        public Avoloos_WarlockDestructionIcyVeins()
+        public Avoloos_WarlockDestructionIcyVeins() : base()
 		{
             GroupBuffs = new[]
 			{

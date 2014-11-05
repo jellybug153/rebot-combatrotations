@@ -16,7 +16,7 @@ namespace ReBot
         [JsonProperty("Automatic mana-management through Life Tap")]
         public bool AutomaticManaManagement = true;
 
-        public Avoloos_WarlockAfflictionIcyVeins()
+        public Avoloos_WarlockAfflictionIcyVeins() : base()
         {
             GroupBuffs = new[]
 			{

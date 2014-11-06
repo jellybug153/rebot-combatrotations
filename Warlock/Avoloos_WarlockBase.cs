@@ -79,7 +79,7 @@ namespace Avoloos
                         fearTrackingList.Add(new ExpirableUnitObject(add, FearBanTime));
                     }
                 } catch { // catch everything
-                    API.PrintError("Got an error in fear management logic. Disabling fear for now... Please Report to Avoloos: {0}", e);
+                    API.PrintError("Got an error in fear management logic. Disabling fear for now... Please Report to Avoloos.");
                     FearDoFear = false;
                 }
 

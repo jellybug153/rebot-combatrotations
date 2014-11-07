@@ -1,58 +1,77 @@
-using System.ComponentModel;
-using System.Linq;
 using System;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 using ReBot.API;
-using WarlockCommon;
 using Avoloos.Warlock;
+using ReBot.Helpers;
+using System.Security.Cryptography.X509Certificates;
+using Geometry;
+using System.Linq;
+using Mono.CSharp;
 
 namespace ReBot
 {
-    [Rotation("Warlock Demonology - Icy Veins Profile", "Avoloos", WoWClass.Warlock, Specialization.WarlockDemonology, 40)]
-    public sealed class Avoloos_WarlockDemonologyIcyVeins : WarlockBaseRotation
+    enum DemonologySpellIDs
     {
-        // If this value is true Hand of Guldan will be cast, else it will not.
-        private bool handOfGuldanSpellLock = false;
-        private int minMoltenStacksForSoulfire = 5;
+        SHADOWBOLT = 686,
+        TOUCHOFCAOS = 103964,
+        CORRUPTION = 172,
+        DOOM = 603,
+    };
 
-        public Avoloos_WarlockDemonologyIcyVeins() : base()
+    [Rotation(
+        "Warlock Demonology - Icy Veins Profile",
+        "Avoloos",
+        WoWClass.Warlock,
+        Specialization.WarlockDemonology,
+        40
+    )] 
+    public sealed class AvoloosWarlockDemonologyIcyVeins : WarlockBaseRotation
+    {
+        /// <summary>
+        /// The hand of guldan spell lock.
+        /// If this value is true Hand of Guldan will be cast, else it will not.
+        /// </summary>
+        bool handOfGuldanSpellLock = false;
+
+        /// <summary>
+        /// The minimum molten stacks for soulfire to be cast.
+        /// </summary>
+        int minMoltenStacksForSoulfire = 5;
+
+        public AvoloosWarlockDemonologyIcyVeins()
         {
-            GroupBuffs = new[]
-            {
+            GroupBuffs = new[] {
                 "Dark Intent",
-                (CurrentBotName == "PvP" ? "Create Soulwell" : null)
+                ( CurrentBotName == "PvP" ? "Create Soulwell" : null )
             };
-            PullSpells = new[]
-            {
+            PullSpells = new[] {
                 "Shadow Bolt"
             };
 
             UsePet = true;
         }
 
-        private bool doMultiTargetRotation(int MobsInFrontOfMe)
+        bool DoMultiTargetRotation(int mobsInFrontOfMe)
         {
             bool doSoulFire = true;
             bool doHellfire = false;
             bool doImmolationAura = false;
-            bool doShadowBolt = true;
             
             // Check for Felguard/Wrathguard
-            bool doFellstorm = HasFelguard();
-            bool doChaosWave = false; // TODO: Support it for easy groups of enemies.
+            // Cast Fellstorm on Felguardpet, if there are enought enemies that are close enough
+            bool doFellstorm = HasFelguard() && Adds.Count(u => Vector3.DistanceSquared(Me.Pet.Position, u.Position) <= 8 * 8) >= 2;
+
+            //bool doChaosWave = false; // TODO: Support it for easy groups of enemies.
             bool dotAllTargets = false;
             
-            if(MobsInFrontOfMe >= 6) {
+            if (mobsInFrontOfMe >= 6) {
                 // Skip Soul Fire
                 doSoulFire = false;
-            } else if(MobsInFrontOfMe >= 4) {
+            } else if (mobsInFrontOfMe >= 4) {
                 // TODO: Support Mannoroth's Fury
-                doHellfire = !Me.HasAura("Metamorphosis");
-                doShadowBolt = false;
+                doHellfire = !HasMetamorphosis;
                 minMoltenStacksForSoulfire = 10;
-            } else if(MobsInFrontOfMe >= 3) {
-                doImmolationAura = Me.HasAura("Metamorphosis");
+            } else if (mobsInFrontOfMe >= 3) {
+                doImmolationAura = HasMetamorphosis;
             } else {
                 doFellstorm = false; // I think it would be useless to kick the CD in for less than 3 mobs
                 dotAllTargets = true;
@@ -60,140 +79,234 @@ namespace ReBot
             
             // Always do Hand of Gul'dan id available and before tick ends
             // highest prio!
-            // TODO: find a way to get the charges of Hands of Guldan and activate it only if 2 charges are there
-            //       till we got no charges left, then deactivate till we got 2 again.
-            handOfGuldanSpellLock = true;
             if (Cast(
-                "Hand of Gul'dan",
-                () => handOfGuldanSpellLock && Target.AuraTimeRemaining("Hand of Gul'dan") <= 3f
-            )) return true;
+                    "Hand of Gul'dan",
+                    () => handOfGuldanSpellLock && Target.AuraTimeRemaining("Hand of Gul'dan") <= 3f
+                ))
+                return true;
             
-            if(dotAllTargets)
-            { // Do all the Adds dotting.
-                if(Me.HasAura("Metamorphosis"))
-                {
-                    if(CastOnAdds(
-                        "Doom",
-                        (add) => (add.HpGreaterThanOrElite(0.15) && (!add.HasAura("Doom") || add.AuraTimeRemaining("Doom") <= 18f))
-                    )) return true;
-                }
-                else
-                {
-                    if (CastOnAdds(
-                        "Corruption",
-                        (add) => (add.HpGreaterThanOrElite(0.15) && (!add.HasAura("Corruption") || add.AuraTimeRemaining("Corruption") <= 6f))
-                    )) return true;
+            if (dotAllTargets) { // Do all the Adds dotting.
+                if (HasMetamorphosis) {
+                    if (CastSpellOnAdds(
+                            "Doom",
+                            add => ( add.HpGreaterThanOrElite(0.15) && ( !add.HasAura("Doom") || add.AuraTimeRemaining("Doom") <= 18f ) )
+                        ))
+                        return true;
+                } else {
+                    if (CastSpellOnAdds(
+                            "Corruption",
+                            add => ( add.HpGreaterThanOrElite(0.15) && ( !add.HasAura("Corruption") || add.AuraTimeRemaining("Corruption") <= 6f ) )
+                        ))
+                        return true;
                 }
             }
 
-            if(Cast(
-                "Soul Fire",
-                () =>  
-                   (Target.HealthFraction <= 0.25)
-                || (Me.HasAura("Molten Core", true, minMoltenStacksForSoulfire))
-            )) return true;
-            
-            // TODO: find a way to check if the Felguard is IN a group of adds...
-            // But Hand of Gul'dan and Corruption should be more than enough time for the guard to get there.
-            if(Cast(
-                "Command Demon", 
-                () => doFellstorm
-            )) return true;
+            if (Cast(
+                    "Soul Fire",
+                    () => doSoulFire
+                    && ( Target.HealthFraction <= 0.25 )
+                    || ( Me.HasAura("Molten Core", true, minMoltenStacksForSoulfire) )
+                ))
+                return true;
+
+            if (Cast(
+                    "Command Demon",
+                    () => doFellstorm 
+                ))
+                return true;
             
             // TODO: find a way to get close to the enemies (leap there?)
+            if (doHellfire || doImmolationAura) {
 
-            if (CastPreventDouble(
-                "Immolation Aura",
-                () => doImmolationAura
-            )) return true;
-            if (CastPreventDouble(
-               "Hellfire",
-               () => doHellfire
-           )) return true;
+                if (CastVariant("Hellfire", "Immolation Aura", Me))
+                    return true;
+            }
             
             // TODO: find a way to integrate Chaos Wave if targets are easy
             
             // Lets stick to our singleRotaiton if something above does not procc
             return false;
         }
-        private bool doMetamorphosis()
+
+        bool HasMetamorphosis {
+            get {
+                return Me.HasAura(103958);
+            }
+        }
+
+        UnitObject GetUnitWithMostAdds()
+        {
+            //float explShootRangeSq = (float)SpellMaxRangeSq("Explosive Shot");
+            /*UnitObject target = Adds
+                .Select(u => new
+                {
+                    Unit = u,
+                    DistSq = u.DistanceSquared,
+                    TotalCount = Adds.Count(o => u != o && o.DistanceSquared < 8 * 8)
+                })
+                .Where(u => u.DistSq < explShootRangeSq)
+                .OrderByDescending(u => u.TotalCount)
+                .Select(u => u.Unit)
+                .FirstOrDefault();*/
+
+            return Target;
+        }
+
+        bool DoMetamorphosis()
         {
             var currentFury = Me.GetPower(WoWPowerType.WarlockDemonicFury);
 
-            if (Me.HasAura("Metamorphosis"))
-            {
+            if (HasMetamorphosis) {
                 if (CastSelf(
-                    "Metamorphosis",
-                    () =>
-                       (currentFury < 750 && !Me.HasAura("Dark Soul: Knowledge"))
-                    || (SpellCooldown("Metamorphosis") == 0 && !Me.InCombat)
-                    || (currentFury < 750 && (Target.HasAura("Corruption", true) && Target.HasAura("Doom", true)) && SpellCooldown("Metamorphosis") < 0)
-                )) return true;
-            }
-            else
-            {
+                        "Metamorphosis",
+                        () =>
+                       ( currentFury < 750 && !Me.HasAura("Dark Soul: Knowledge") )
+                        || ( SpellCooldown("Metamorphosis") <= 0.1 && !Me.InCombat )
+                        || ( currentFury < 750 && ( Target.HasAura("Corruption", true) && Target.HasAura("Doom", true) ) && SpellCooldown("Metamorphosis") < 0 )
+                    ))
+                    return true;
+            } else {
                 // TODO: Tune the Dark Soul condition a bit...
                 if (CastSelf(
-                    "Metamorphosis",
-                    () =>
+                        "Metamorphosis",
+                        () =>
                         Me.InCombat
                         && (
-                            (currentFury >= 850)
-                         || (currentFury >= 400 && Me.HasAura("Dark Soul: Knowledge"))
-                         || (currentFury >= 200 && Target.HasAura("Corruption", true) && !Target.HasAura("Doom"))
+                            ( currentFury >= 850 )
+                            || ( currentFury >= 400 && Me.HasAura("Dark Soul: Knowledge") )
+                            || ( currentFury >= 200 && Target.HasAura("Corruption", true) && !Target.HasAura("Doom") )
                         ) 
-                )) return true;
+                    ))
+                    return true;
             }
 
             return false;
         }
-        
+
+        void ResetRotationVariables()
+        {
+            minMoltenStacksForSoulfire = 5;
+
+            if (SpellCharges("Hand of Gul'dan") >= 2) {
+                handOfGuldanSpellLock = true;
+            }
+
+            if (SpellCharges("Hand of Gul'dan") == 0) {
+                handOfGuldanSpellLock = false;
+            }
+        }
+
+        bool CastVariant(string spellNameNormal, string spellNameMetamorphosed, UnitObject target = null, Func<UnitObject, bool> unitCondition = null, Func<UnitObject, bool> normalCondition = null, Func<UnitObject, bool> metamorphedCondition = null)
+        {
+            if (target == null)
+                target = Target;
+            if (unitCondition == null)
+                unitCondition = ( _ => true );
+            if (normalCondition == null)
+                normalCondition = ( _ => true );
+            if (metamorphedCondition == null)
+                metamorphedCondition = ( _ => true );
+
+            Info("CastVariant got called: {0}, {1}", spellNameNormal, spellNameMetamorphosed);
+            Info(
+                "unitCondition: {0}, normalCondition/metamorphedCondition:{1}, Should Cast: {2}", 
+                unitCondition(target),
+                HasMetamorphosis ? metamorphedCondition(target) : normalCondition(target),
+                HasMetamorphosis ? unitCondition(target) && metamorphedCondition(target) : unitCondition(target) && normalCondition(target)
+            );
+            return HasMetamorphosis ? Cast(
+                spellNameMetamorphosed,
+                () => unitCondition(target) && metamorphedCondition(target),
+                target
+            ) : Cast(
+                spellNameNormal,
+                () => unitCondition(target) && normalCondition(target),
+                target
+            );
+        }
+
+        bool CastVariant(DemonologySpellIDs spellIdNormal, DemonologySpellIDs spellIdMetamorphosed, UnitObject target = null, Func<UnitObject, bool> unitCondition = null, Func<UnitObject, bool> normalCondition = null, Func<UnitObject, bool> metamorphedCondition = null)
+        {
+            if (target == null)
+                target = Target;
+            if (unitCondition == null)
+                unitCondition = ( _ => true );
+            if (normalCondition == null)
+                normalCondition = ( _ => true );
+            if (metamorphedCondition == null)
+                metamorphedCondition = ( _ => true );
+
+            return HasMetamorphosis ? Cast(
+                (int) spellIdMetamorphosed,
+                () => unitCondition(target) && metamorphedCondition(target),
+                target
+            ) : Cast(
+                (int) spellIdNormal,
+                () => unitCondition(target) && normalCondition(target),
+                target
+            );
+        }
+
         public override void Combat()
         {
             // reset some vars
-            minMoltenStacksForSoulfire = 5;
+            ResetRotationVariables();
 
-            if (doGlobalStuff()) return;
-            if (doSomePetAndHealingStuff()) return;
+            if (DoGlobalStuff())
+                return;
+            if (DoSomePetAndHealingStuff())
+                return;
             //if (CastPreventDouble("Drain Life", () => Me.HealthFraction < 0.5, 10000)) return;
 
-            if (CurrentBotName == "PvP" && CastFearIfFeasible()) return;
-            if (doMetamorphosis()) return;
+            if (CurrentBotName == "PvP" && CastFearIfFeasible())
+                return;
+
+            if (DoMetamorphosis())
+                return;
+
+            if (HasGlobalCooldown())
+                return;
             
             // Icy Veins Rotation
-            if(Adds.Count > 0 && doMultiTargetRotation(Adds.Count + 1)) return;
-
-
-            if (Cast(
-                "Doom",
-                () => Me.HasAura("Metamorphosis") && ((Target.HpGreaterThanOrElite(0.15) && (!Target.HasAura("Doom") || Target.AuraTimeRemaining("Doom") <= 18f)))
-            )) return;
-            if(Cast(
-                "Corruption",
-                () => !Me.HasAura("Metamorphosis") && ((Target.HpGreaterThanOrElite(0.15) && (!Target.HasAura("Corruption") || Target.AuraTimeRemaining("Corruption") <= 6f)))
-            )) return;
-
+            if (Adds.Count > 0 && DoMultiTargetRotation(Adds.Count + 1))
+                return;
+                
+            Info("Do Singlerotation");
+            Info("Is Metamorphed: {0}", HasMetamorphosis);
             // Always do Hand of Gul'dan id available and before tick ends
             // highest prio!
-            // TODO: find a way to get the charges of Hands of Guldan and activate it only if 2 charges are there
-            //       till we got no charges left, then deactivate till we got 2 again.
-            handOfGuldanSpellLock = true;
             if (Cast(
-                "Hand of Gul'dan",
-                () => handOfGuldanSpellLock && Target.AuraTimeRemaining("Hand of Gul'dan") <= 3f
-            )) return;
+                    "Hand of Gul'dan",
+                    () => handOfGuldanSpellLock && Target.AuraTimeRemaining("Hand of Gul'dan") <= 3f
+                ))
+                return;
+
+            Info("No Hand of Gul'dan was cast");
+            // Then we do the rest of our dots
+            if (CastVariant(
+                    "Corruption",
+                    "Doom",
+                    Target,
+                    (u) => u.HpGreaterThanOrElite(0.15),
+                    (u) => !u.HasAura("Corruption", true) || u.AuraTimeRemaining("Corruption") <= 4f,
+                    (u) => !u.HasAura("Doom", true) || u.AuraTimeRemaining("Doom") <= 18f
+                ))
+                return;
+            Info("No Corruption variant was cast");
 
             if (Cast(
-                "Soul Fire",
-                () =>
-                   (Target.HealthFraction <= 0.25)
-                || (Me.HasAura("Molten Core", true, minMoltenStacksForSoulfire))
-            )) return;
+                    "Soul Fire",
+                    () => ( Me.HasAura("Molten Core", true) && Target.HealthFraction <= 0.25 )
+                    || ( Me.HasAura("Molten Core", true, minMoltenStacksForSoulfire) )
+                ))
+                return;
+            Info("No Soulfire was cast");
 
-            if (Cast("Touch of Chaos", () => Me.HasAura("Metamorphosis"))) return;
-            
-            //if nothing was cast, then cast the good old shadow bolt
-            Cast("Shadow Bolt");
+            // Fallback cast variant
+            if (CastVariant("Shadow Bolt", "Touch of Chaos"))
+                return;
+
+            Info("No Shadowbolt variant was cast");
         }
     }
 }

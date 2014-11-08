@@ -364,30 +364,27 @@ namespace Avoloos
             }
 
             /// <summary>
-            /// Do the stuff which got no GCD-
+            /// Do the stuff which got no GCD.
             /// </summary>
             /// <returns><c>true</c>, if there was an GCD after a cast, <c>false</c> otherwise.</returns>
             protected bool DoGlobalStuff()
             {
                 //no globalcd
-                if (HasSpell("Dark Soul: Instability"))
-                    CastSelfPreventDouble(
-                        "Dark Soul: Instability",
-                        () => Target.IsInCombatRangeAndLoS,
-                        120000
-                    );
-                if (HasSpell("Dark Soul: Knowledge"))
-                    CastSelfPreventDouble(
-                        "Dark Soul: Knowledge",
-                        () => Target.IsInCombatRangeAndLoS,
-                        120000
-                    );
-                if (HasSpell("Dark Soul: Misery"))
-                    CastSelfPreventDouble(
-                        "Dark Soul: Misery",
-                        () => Target.IsInCombatRangeAndLoS,
-                        120000
-                    );
+                CastSelfPreventDouble(
+                    "Dark Soul: Instability",
+                    () => Target.IsInCombatRangeAndLoS,
+                    120000
+                );
+                CastSelfPreventDouble(
+                    "Dark Soul: Knowledge",
+                    () => Target.IsInCombatRangeAndLoS,
+                    120000
+                );
+                CastSelfPreventDouble(
+                    "Dark Soul: Misery",
+                    () => Target.IsInCombatRangeAndLoS,
+                    120000
+                );
 
                 Cast(
                     "Command Demon",
@@ -408,14 +405,12 @@ namespace Avoloos
                 Cast("Axe Toss", () => HasFelguard() && Target.IsCastingAndInterruptible());
 
                 //Heal
-                if (HasSpell("Unbound Will"))
-                    CastSelf("Unbound Will", () => !Me.CanParticipateInCombat); //no gc
-                if (HasSpell("Dark Bargain"))
-                    CastSelf("Dark Bargain", () => Me.HealthFraction < 0.5); //no gc
-                if (HasSpell("Sacrificial Pact"))
-                    CastSelf("Sacrificial Pact", () => Me.HealthFraction < 0.6); //no gc
-                if (HasSpell("Unending Resolve"))
-                    CastSelf("Unending Resolve", () => Me.HealthFraction <= 0.5); //no gc
+                CastSelf("Unbound Will", () => !Me.CanParticipateInCombat);
+                CastSelf("Dark Bargain", () => Me.HealthFraction < 0.5);
+                CastSelf("Sacrificial Pact", () => Me.HealthFraction < 0.6);
+                CastSelf("Unending Resolve", () => Me.HealthFraction <= 0.5);
+                CastSelf("Dark Regeneration", () => Me.HealthFraction <= 0.6);
+                //CastSelf("Demonic Rebirth", () => Me.HealthFraction < 0.9 && Target.IsInCombatRangeAndLoS); - Does not exist anymore
 
                 if (Me.HasAlivePet) {
                     UnitObject add = Adds.FirstOrDefault(x => x.Target == Me);
@@ -432,41 +427,25 @@ namespace Avoloos
             /// <returns><c>true</c>, if a GCD spell as cast, <c>false</c> otherwise.</returns>
             protected bool DoSomePetAndHealingStuff()
             {
-                if (HasSpell("Mortal Coil") && Cast("Mortal Coil", () => Me.HealthFraction <= 0.5))
+                if (Cast("Mortal Coil", () => Me.HealthFraction <= 0.5))
                     return true;
-                if (HasSpell("Dark Regeneration") && CastSelf("Dark Regeneration", () => Me.HealthFraction <= 0.6))
-                    return true;
-                if (HasSpell("Flames of Xoroth") && CastSelf(
+
+                if (CastSelf(
                         "Flames of Xoroth",
                         () => !HasSpell("Grimoire of Sacrifice") && !Me.HasAlivePet && Me.GetPower(WoWPowerType.WarlockDestructionBurningEmbers) >= 1
                     ))
                     return true;
-                if (UseAdditionalDPSPet && HasSpell("Summon Terrorguard") && Cast(
-                        "Summon Terrorguard",
-                        () => Me.HpLessThanOrElite(0.5)
+                if (CastOnTerrain(
+                        HasAura("Grimoire of Supremacy") ? "Summon Abyssal" : "Summon Infernal",
+                        Target.Position,
+                        () => UseAdditionalDPSPet && ( Me.HpLessThanOrElite(0.5) || Adds.Count >= 3 )
+                    ) || Cast(
+                        HasAura("Grimoire of Supremacy") ? "Summon Terrorguard" : "Summon Doomguard",
+                        () => UseAdditionalDPSPet && Me.HpLessThanOrElite(0.5)
                     ))
                     return true;
-                if (UseAdditionalDPSPet && HasSpell("Summon Doomguard") && Cast(
-                        "Summon Doomguard",
-                        () => Me.HpLessThanOrElite(0.5)
-                    ))
-                    return true;
-                if (UseAdditionalDPSPet && HasSpell("Summon Infernal") && Cast(
-                        "Summon Infernal",
-                        () => Me.HpLessThanOrElite(0.5) || Adds.Count >= 4
-                    ))
-                    return true;
-                if (UseAdditionalDPSPet && HasSpell("Summon Abyssal") && Cast(
-                        "Summon Abyssal",
-                        () => Me.HpLessThanOrElite(0.5) || Adds.Count >= 4
-                    ))
-                    return true;
-                if (HasSpell("Demonic Rebirth") && CastSelf(
-                        "Demonic Rebirth",
-                        () => Me.HealthFraction < 0.9 && Target.IsInCombatRangeAndLoS
-                    ))
-                    return true;
-                if (HasSpell("Ember Tap") && CastSelf(
+               
+                if (CastSelf(
                         "Ember Tap",
                         () => Me.HealthFraction <= 0.35 && Me.GetPower(WoWPowerType.WarlockDestructionBurningEmbers) >= 1
                     ))

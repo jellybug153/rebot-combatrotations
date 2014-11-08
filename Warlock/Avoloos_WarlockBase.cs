@@ -5,6 +5,7 @@ using ReBot.API;
 using WarlockCommon;
 using System;
 using System.Collections.Generic;
+using Geometry;
 
 namespace Avoloos
 {
@@ -106,11 +107,85 @@ namespace Avoloos
             protected List<ExpirableObject> FearTrackingList;
 
             /// <summary>
+            /// Dictionary with all AoE effect ranges
+            /// </summary>
+            protected Dictionary<string, float> AoESpellRadius = new Dictionary<string, float> {
+                { "Rain of Fire", 8 * 8 },
+                { "Hand of Gul'dan", 6 * 6 },
+                { "Felstorm", 8 * 8 }
+            };
+
+            /// <summary>
             /// Initializes a new instance of the <see cref="Avoloos.Warlock.WarlockBaseRotation"/> class.
             /// </summary>
             protected WarlockBaseRotation()
             {
                 FearTrackingList = new List<ExpirableObject>();
+            }
+
+            /// <summary>
+            /// Casts the given spell on the best target.
+            /// </summary>
+            /// <returns><c>true</c>, if spell on best target was cast, <c>false</c> otherwise.</returns>
+            /// <param name="spellName">Spell name.</param>
+            /// <param name="castWhen">onlyCastWhen condition for Cast()</param>
+            /// <param name="bestTargetCondition">Condition to limit the UnitObjects for a bestTarget</param>
+            /// <param name="targetOverride">Spell will be cast on this target</param>
+            public bool CastSpellOnBestAoETarget(string spellName, Func<UnitObject, bool> castWhen = null, Func<UnitObject, bool> bestTargetCondition = null, UnitObject targetOverride = null)
+            {
+                if (castWhen == null)
+                    castWhen = (_) => true;
+
+                if (bestTargetCondition == null)
+                    bestTargetCondition = (_) => true;
+
+                var aoeRange = SpellAoERange(spellName);
+                var bestTarget = targetOverride ?? Adds
+                    .Where(u => u.IsInCombatRangeAndLoS && u.DistanceSquared <= SpellMaxRangeSq(spellName) && bestTargetCondition(u))
+                    .OrderByDescending(u => Adds.Count(o => Vector3.DistanceSquared(u.Position, o.Position) <= aoeRange)).FirstOrDefault();
+
+                return SpellIsCastOnTerrain(spellName) ? CastOnTerrain(
+                    spellName,
+                    bestTarget.Position,
+                    () => castWhen(bestTarget)
+                ) : Cast(
+                    spellName,
+                    bestTarget, 
+                    () => castWhen(bestTarget)
+                );
+            }
+
+            public float SpellAoERange(string spellName)
+            {
+                var aoeRange = AoESpellRadius.FirstOrDefault(u => u.Key == spellName).Value;
+
+                if ((int) aoeRange == 0)
+                    aoeRange = 12 * 12; // Just guess the biggest one
+                    
+                if (HasAura("Mannoroth's Fury")) {
+                    switch (spellName) {
+                        case "Seed of Corruption":
+                        case "Hellfire":
+                        case "Immolation Aura":
+                        case "Rain of Fire":
+                            aoeRange *= 5;// 500%
+                            break;
+                    }
+                }
+
+                return aoeRange;
+            }
+
+            public bool SpellIsCastOnTerrain(string spellName)
+            {
+                switch (spellName) {
+                    case "Rain of Fire":
+                        return true;
+                    case "Hand of Gul'dan":
+                        return HasGlyph(56248);
+                    default:
+                        return false;
+                }
             }
 
             /// <summary>
@@ -326,7 +401,11 @@ namespace Avoloos
                     "Command Demon",
                     () => ( this.IsPetActive("Summon Voidwalker") || SelectedPet == WarlockPet.Voidwalker ) && Me.HealthFraction < 0.5
                 );
-                Cast("Axe Toss", () => HasFelguard() && Target.IsCastingAndInterruptible()); // Should have no gc as its a pet ability
+                Cast(
+                    "Command Demon",
+                    () => HasFelguard() && Adds.Count(u => Vector3.DistanceSquared(Me.Pet.Position, u.Position) <= 8 * 8) >= 2
+                );
+                Cast("Axe Toss", () => HasFelguard() && Target.IsCastingAndInterruptible());
 
                 //Heal
                 if (HasSpell("Unbound Will"))

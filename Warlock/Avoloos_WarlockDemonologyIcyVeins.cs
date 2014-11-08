@@ -55,10 +55,6 @@ namespace ReBot
             bool doSoulFire = true;
             bool doHellfire = false;
             bool doImmolationAura = false;
-            
-            // Check for Felguard/Wrathguard
-            // Cast Fellstorm on Felguardpet, if there are enought enemies that are close enough
-            bool doFellstorm = HasFelguard() && Adds.Count(u => Vector3.DistanceSquared(Me.Pet.Position, u.Position) <= 8 * 8) >= 2;
 
             //bool doChaosWave = false; // TODO: Support it for easy groups of enemies.
             bool dotAllTargets = false;
@@ -73,17 +69,8 @@ namespace ReBot
             } else if (mobsInFrontOfMe >= 3) {
                 doImmolationAura = HasMetamorphosis;
             } else {
-                doFellstorm = false; // I think it would be useless to kick the CD in for less than 3 mobs
                 dotAllTargets = true;
             }
-            
-            // Always do Hand of Gul'dan id available and before tick ends
-            // highest prio!
-            if (Cast(
-                    "Hand of Gul'dan",
-                    () => handOfGuldanSpellLock && Target.AuraTimeRemaining("Hand of Gul'dan") <= 3f
-                ))
-                return true;
             
             if (dotAllTargets) { // Do all the Adds dotting.
                 if (HasMetamorphosis) {
@@ -108,16 +95,9 @@ namespace ReBot
                     || ( Me.HasAura("Molten Core", true, minMoltenStacksForSoulfire) )
                 ))
                 return true;
-
-            if (Cast(
-                    "Command Demon",
-                    () => doFellstorm 
-                ))
-                return true;
             
             // TODO: find a way to get close to the enemies (leap there?)
             if (doHellfire || doImmolationAura) {
-
                 if (CastVariant("Hellfire", "Immolation Aura", Me))
                     return true;
             }
@@ -132,24 +112,6 @@ namespace ReBot
             get {
                 return Me.HasAura(103958);
             }
-        }
-
-        UnitObject GetUnitWithMostAdds()
-        {
-            //float explShootRangeSq = (float)SpellMaxRangeSq("Explosive Shot");
-            /*UnitObject target = Adds
-                .Select(u => new
-                {
-                    Unit = u,
-                    DistSq = u.DistanceSquared,
-                    TotalCount = Adds.Count(o => u != o && o.DistanceSquared < 8 * 8)
-                })
-                .Where(u => u.DistSq < explShootRangeSq)
-                .OrderByDescending(u => u.TotalCount)
-                .Select(u => u.Unit)
-                .FirstOrDefault();*/
-
-            return Target;
         }
 
         bool DoMetamorphosis()
@@ -266,6 +228,14 @@ namespace ReBot
 
             if (HasGlobalCooldown())
                 return;
+
+            // Always do Hand of Gul'dan id available and before tick ends
+            // highest prio!
+            if (CastSpellOnBestAoETarget(
+                    "Hand of Gul'dan",
+                    (u) => handOfGuldanSpellLock && u.AuraTimeRemaining("Hand of Gul'dan") <= 3f
+                ))
+                return;
             
             // Icy Veins Rotation
             if (Adds.Count > 0 && DoMultiTargetRotation(Adds.Count + 1))
@@ -273,14 +243,6 @@ namespace ReBot
                 
             Info("Do Singlerotation");
             Info("Is Metamorphed: {0}", HasMetamorphosis);
-            // Always do Hand of Gul'dan id available and before tick ends
-            // highest prio!
-            if (Cast(
-                    "Hand of Gul'dan",
-                    () => handOfGuldanSpellLock && Target.AuraTimeRemaining("Hand of Gul'dan") <= 3f
-                ))
-                return;
-
             Info("No Hand of Gul'dan was cast");
             // Then we do the rest of our dots
             if (CastVariant(

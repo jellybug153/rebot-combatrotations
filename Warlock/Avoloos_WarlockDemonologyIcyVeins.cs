@@ -110,7 +110,7 @@ namespace ReBot
 
         bool HasMetamorphosis {
             get {
-                return Me.HasAura(103958);
+                return Me.HasAura("Metamorphosis");
             }
         }
 

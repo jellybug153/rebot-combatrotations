@@ -37,18 +37,19 @@ namespace ReBot
                 return true;
 
             /*
-             * Against 5 or more enemies, you will need to start using Soulburn Icon Soulburn with Seed of Corruption Icon Seed of Corruption
+             * Against 5 or more enemies, you will need to start using Soulburn with Seed of Corruption
              */
             if (mobsInFrontOfMe >= 5) {
-                if (CastSpellOnAdds(
+                if (CastSelf(
                         "Soulburn",
-                        add => !Me.HasAura("Soulburn")
+                        () => !Me.HasAura("Soulburn")
                     ))
                     return true;
             }
             if (Me.HasAura("Soulburn")) {
-                if (CastSpellOnAdds(
+                if (CastSpellOnBestAoETarget(
                         "Seed of Corruption",
+                        add => !add.HasAura("Seed of Corruption"),
                         add => !add.HasAura("Seed of Corruption")
                     ))
                     return true;

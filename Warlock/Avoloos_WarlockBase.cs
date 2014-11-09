@@ -319,11 +319,9 @@ namespace Avoloos
             /// <returns><c>true</c>, if the function should be called again, <c>false</c> otherwise.</returns>
             public override bool OutOfCombat()
             {
-                if (HasSpell("Fire and Brimstone") && CastSelf(
-                        "Fire and Brimstone",
-                        () => Me.HasAura("Fire and Brimstone")
-                    ) && HasGlobalCooldown())
-                    return true;
+                CastSelf("Metamorphosis", () => Me.HasAura("Metamorphosis"));
+                CastSelf("Fire and Brimstone", () => Me.HasAura("Fire and Brimstone"));
+
                 if (CastSelf("Dark Intent", () => !Me.HasAura("Dark Intent")))
                     return true;
                 if (CastSelf("Unending Breath", () => Me.IsSwimming && !Me.HasAura("Unending Breath")))
@@ -365,7 +363,7 @@ namespace Avoloos
                         () => Me.HasAura("Fire and Brimstone")
                     ))
                     return true;
-                if (HasSpell("Metamorphosis") && CastSelf("Metamorphosis", () => Me.HasAura("Metamorphosis")))
+                if (CastSelf("Metamorphosis", () => Me.HasAura("Metamorphosis")))
                     return true;
                 return false;
             }

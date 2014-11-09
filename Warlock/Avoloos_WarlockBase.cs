@@ -112,7 +112,10 @@ namespace Avoloos
             protected Dictionary<string, float> AoESpellRadius = new Dictionary<string, float> {
                 { "Rain of Fire", 8 * 8 },
                 { "Hand of Gul'dan", 6 * 6 },
-                { "Felstorm", 8 * 8 }
+                { "Felstorm", 8 * 8 },
+                { "Shadowfury", 8 * 8 },
+                { "Immolate", 10 * 10 },
+                { "Conflagrate", 10 * 10 },
             };
 
             /// <summary>

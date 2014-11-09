@@ -135,7 +135,7 @@ namespace ReBot
         {
             if (Cast(
                     "Agony",
-                    () => Target.HpGreaterThanOrElite(0.3) && ( !Target.HasAura("Agony") || Target.AuraTimeRemaining("Unstable Affliction") <= 7f ),
+                    () => Target.HpGreaterThanOrElite(0.3) && ( !Target.HasAura("Agony") || Target.AuraTimeRemaining("Agony") <= 7f ),
                     u
                 ))
                 return true;

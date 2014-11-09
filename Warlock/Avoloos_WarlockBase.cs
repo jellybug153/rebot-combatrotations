@@ -330,13 +330,16 @@ namespace Avoloos
                 if (CastSelf("Soulstone", () => CurrentBotName != "Combat" && !Me.HasAura("Soulstone")))
                     return true;
 
-                if (HasSpell("Grimoire of Sacrifice") && !Me.HasAura("Grimoire of Sacrifice")) {
-                    if (this.SummonPet(SelectedPet))
-                        return true;
-                    if (CastSelf("Grimoire of Sacrifice", () => Me.HasAlivePet))
-                        return true;
-                } else if (UsePet && !API.DisableCombat) {
-                    if (HasSpell("Flames of Xoroth") && CastSelf(
+
+                if (HasSpell("Grimoire of Sacrifice")) {
+                    if (!HasAura("Grimoire of Sacrifice")) {
+                        if (this.SummonPet(SelectedPet))
+                            return true;
+                        if (CastSelf("Grimoire of Sacrifice", () => Me.HasAlivePet))
+                            return true;
+                    }
+                } else if (UsePet) {
+                    if (CastSelf(
                             "Flames of Xoroth",
                             () => !Me.HasAlivePet && Me.GetPower(WoWPowerType.WarlockDestructionBurningEmbers) >= 1
                         ))
@@ -391,7 +394,7 @@ namespace Avoloos
 
                 Cast(
                     "Command Demon",
-                    () => ( this.IsPetActive("Summon Felhunter") || SelectedPet == WarlockPet.Felhunter ) && Target.IsCastingAndInterruptible()
+                    () => !HasSpell("Grimoire of Sacrifice") && ( this.IsPetActive("Summon Felhunter") || SelectedPet == WarlockPet.Felhunter ) && Target.IsCastingAndInterruptible()
                 );
                 Cast(
                     "Command Demon",
@@ -399,14 +402,21 @@ namespace Avoloos
                 );
                 Cast(
                     "Command Demon",
-                    () => ( this.IsPetActive("Summon Voidwalker") || SelectedPet == WarlockPet.Voidwalker ) && Me.HealthFraction < 0.5
+                    () => !HasSpell("Grimoire of Sacrifice") && ( this.IsPetActive("Summon Voidwalker") || SelectedPet == WarlockPet.Voidwalker ) && Me.HealthFraction < 0.5
                 );
                 Cast(
                     "Command Demon",
-                    () => HasFelguard() && Adds.Count(u => Vector3.DistanceSquared(Me.Pet.Position, u.Position) <= 8 * 8) >= 2
+                    () => !HasSpell("Grimoire of Sacrifice")
+                    && HasFelguard()
+                    && Adds.Count(u => Vector3.DistanceSquared(
+                        Me.Pet.Position,
+                        u.Position
+                    ) <= 8 * 8) >= 2
                 );
-                Cast("Axe Toss", () => HasFelguard() && Target.IsCastingAndInterruptible());
-
+                Cast(
+                    "Axe Toss",
+                    () => !HasSpell("Grimoire of Sacrifice") && HasFelguard() && Target.IsCastingAndInterruptible()
+                );
                 //Heal
                 CastSelf("Unbound Will", () => !Me.CanParticipateInCombat);
                 CastSelf("Dark Bargain", () => Me.HealthFraction < 0.5);

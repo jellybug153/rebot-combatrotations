@@ -6,6 +6,8 @@ using System.Security.Cryptography.X509Certificates;
 using Geometry;
 using System.Linq;
 using Mono.CSharp;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace ReBot
 {
@@ -23,19 +25,22 @@ namespace ReBot
         WoWClass.Warlock,
         Specialization.WarlockDemonology,
         40
-    )] 
+    )]
     public sealed class AvoloosWarlockDemonologyIcyVeins : WarlockBaseRotation
     {
+        [JsonProperty("Move near target for Hellfire")]
+        public bool DoMoveHellfireImmolation = true;
+
         /// <summary>
         /// The hand of guldan spell lock.
         /// If this value is true Hand of Guldan will be cast, else it will not.
         /// </summary>
-        bool handOfGuldanSpellLock = false;
+        bool UseHandOfGuldan = false;
 
         /// <summary>
         /// The minimum molten stacks for soulfire to be cast.
         /// </summary>
-        int minMoltenStacksForSoulfire = 5;
+        int MinMoltenStacksForSoulfire = 2;
 
         public AvoloosWarlockDemonologyIcyVeins()
         {
@@ -58,20 +63,20 @@ namespace ReBot
 
             //bool doChaosWave = false; // TODO: Support it for easy groups of enemies.
             bool dotAllTargets = false;
-            
+
             if (mobsInFrontOfMe >= 6) {
                 // Skip Soul Fire
                 doSoulFire = false;
             } else if (mobsInFrontOfMe >= 4) {
                 // TODO: Support Mannoroth's Fury
                 doHellfire = !HasMetamorphosis;
-                minMoltenStacksForSoulfire = 10;
+                MinMoltenStacksForSoulfire = 10;
             } else if (mobsInFrontOfMe >= 3) {
                 doImmolationAura = HasMetamorphosis;
             } else {
                 dotAllTargets = true;
             }
-            
+
             if (dotAllTargets) { // Do all the Adds dotting.
                 if (HasMetamorphosis) {
                     if (CastSpellOnAdds(
@@ -92,18 +97,18 @@ namespace ReBot
                     "Soul Fire",
                     () => doSoulFire
                     && ( Target.HealthFraction <= 0.25 )
-                    || ( Me.HasAura("Molten Core", true, minMoltenStacksForSoulfire) )
+                    || ( Me.HasAura("Molten Core", true, MinMoltenStacksForSoulfire) )
                 ))
                 return true;
-            
+
             // TODO: find a way to get close to the enemies (leap there?)
             if (doHellfire || doImmolationAura) {
                 if (CastVariant("Hellfire", "Immolation Aura", Me))
                     return true;
             }
-            
+
             // TODO: find a way to integrate Chaos Wave if targets are easy
-            
+
             // Lets stick to our singleRotaiton if something above does not procc
             return false;
         }
@@ -116,15 +121,18 @@ namespace ReBot
 
         bool DoMetamorphosis()
         {
+            if (UseHandOfGuldan)
+                return false;
+
             var currentFury = Me.GetPower(WoWPowerType.WarlockDemonicFury);
 
             if (HasMetamorphosis) {
                 if (CastSelf(
                         "Metamorphosis",
-                        () =>
-                       ( currentFury < 750 && !Me.HasAura("Dark Soul: Knowledge") )
-                        || ( SpellCooldown("Metamorphosis") <= 0.1 && !Me.InCombat )
-                        || ( currentFury < 750 && ( Target.HasAura("Corruption", true) && Target.HasAura("Doom", true) ) && SpellCooldown("Metamorphosis") < 0 )
+                        () => ( currentFury < 750 && !Me.HasAura("Dark Soul: Knowledge") && Target.HasAura(
+                            "Doom",
+                            true
+                        ) )
                     ))
                     return true;
             } else {
@@ -137,7 +145,7 @@ namespace ReBot
                             ( currentFury >= 850 )
                             || ( currentFury >= 400 && Me.HasAura("Dark Soul: Knowledge") )
                             || ( currentFury >= 200 && Target.HasAura("Corruption", true) && !Target.HasAura("Doom") )
-                        ) 
+                        )
                     ))
                     return true;
             }
@@ -147,14 +155,14 @@ namespace ReBot
 
         void ResetRotationVariables()
         {
-            minMoltenStacksForSoulfire = 5;
+            MinMoltenStacksForSoulfire = 5;
 
             if (SpellCharges("Hand of Gul'dan") >= 2) {
-                handOfGuldanSpellLock = true;
+                UseHandOfGuldan = true;
             }
 
             if (SpellCharges("Hand of Gul'dan") == 0) {
-                handOfGuldanSpellLock = false;
+                UseHandOfGuldan = false;
             }
         }
 
@@ -168,14 +176,7 @@ namespace ReBot
                 normalCondition = ( _ => true );
             if (metamorphedCondition == null)
                 metamorphedCondition = ( _ => true );
-
-            Info("CastVariant got called: {0}, {1}", spellNameNormal, spellNameMetamorphosed);
-            Info(
-                "unitCondition: {0}, normalCondition/metamorphedCondition:{1}, Should Cast: {2}", 
-                unitCondition(target),
-                HasMetamorphosis ? metamorphedCondition(target) : normalCondition(target),
-                HasMetamorphosis ? unitCondition(target) && metamorphedCondition(target) : unitCondition(target) && normalCondition(target)
-            );
+                
             return HasMetamorphosis ? Cast(
                 spellNameMetamorphosed,
                 () => unitCondition(target) && metamorphedCondition(target),
@@ -233,42 +234,50 @@ namespace ReBot
             // highest prio!
             if (CastSpellOnBestAoETarget(
                     "Hand of Gul'dan",
-                    (u) => handOfGuldanSpellLock && u.AuraTimeRemaining("Hand of Gul'dan") <= 3f
+                    u => !HasMetamorphosis && UseHandOfGuldan && u.AuraTimeRemaining("Hand of Gul'dan") <= 3f,
+                    null,
+                    2000
                 ))
                 return;
-            
+
             // Icy Veins Rotation
             if (Adds.Count > 0 && DoMultiTargetRotation(Adds.Count + 1))
                 return;
-                
-            Info("Do Singlerotation");
-            Info("Is Metamorphed: {0}", HasMetamorphosis);
-            Info("No Hand of Gul'dan was cast");
+
             // Then we do the rest of our dots
             if (CastVariant(
                     "Corruption",
                     "Doom",
                     Target,
-                    (u) => u.HpGreaterThanOrElite(0.15),
-                    (u) => !u.HasAura("Corruption", true) || u.AuraTimeRemaining("Corruption") <= 4f,
-                    (u) => !u.HasAura("Doom", true) || u.AuraTimeRemaining("Doom") <= 18f
+                    u => u.HpGreaterThanOrElite(0.15),
+                    u => !u.HasAura("Corruption", true) || u.AuraTimeRemaining("Corruption") <= 4f,
+                    u => !u.HasAura("Doom", true) || u.AuraTimeRemaining("Doom") <= 18f
                 ))
                 return;
-            Info("No Corruption variant was cast");
 
             if (Cast(
-                    "Soul Fire",
-                    () => ( Me.HasAura("Molten Core", true) && Target.HealthFraction <= 0.25 )
-                    || ( Me.HasAura("Molten Core", true, minMoltenStacksForSoulfire) )
+                    "Soul Fire", 
+                    () => ( 
+                        Target.IsElite()
+                        && ( 
+                            ( Me.HasAura(
+                                "Molten Core", 
+                                true
+                            ) && Target.HealthFraction <= 0.25 )
+                            || Me.HasAura(
+                                "Molten Core",
+                                true,
+                                MinMoltenStacksForSoulfire
+                            )
+                        ) 
+                    )
+                    || ( !Target.IsElite() && Me.HasAura("Molten Core") )
                 ))
                 return;
-            Info("No Soulfire was cast");
-
+                
             // Fallback cast variant
             if (CastVariant("Shadow Bolt", "Touch of Chaos"))
                 return;
-
-            Info("No Shadowbolt variant was cast");
         }
     }
 }

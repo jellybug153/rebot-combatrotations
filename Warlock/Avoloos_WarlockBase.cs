@@ -74,31 +74,31 @@ namespace Avoloos
             /// <summary>
             /// The selected pet.
             /// </summary>
-            [JsonProperty("SelectedPet"), JsonConverter(typeof(StringEnumConverter))]
+            [JsonProperty("Selected Pet"), JsonConverter(typeof(StringEnumConverter))]
             public WarlockPet SelectedPet = WarlockPet.AutoSelect;
 
             /// <summary>
             /// Should use pet?
             /// </summary>
-            [JsonProperty("UsePet")]
+            [JsonProperty("Use Pet")]
             public bool UsePet = true;
 
             /// <summary>
             /// Should the bot use Terrorguard/Infernal
             /// </summary>
-            [JsonProperty("UseAdditionalDPSPet")]
+            [JsonProperty("Use Terrorguard")]
             public bool UseAdditionalDPSPet = true;
 
             /// <summary>
             /// Should the Bot fear?
             /// </summary>
-            [JsonProperty("PvP-DoFear")]
+            [JsonProperty("PvP: Do Fear")]
             public bool FearDoFear = true;
 
             /// <summary>
             /// The fear ban time.
             /// </summary>
-            [JsonProperty("PvP-FearBanTime")]
+            [JsonProperty("PvP: Fear Ban Time")]
             public int FearBanTime = 10000;
             
             /// <summary>

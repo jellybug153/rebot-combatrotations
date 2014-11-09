@@ -128,6 +128,7 @@ namespace Avoloos
 
             /// <summary>
             /// Casts the given spell on the best target.
+            /// If none is found it will always fallback to Target.
             /// </summary>
             /// <returns><c>true</c>, if spell on best target was cast, <c>false</c> otherwise.</returns>
             /// <param name="spellName">Spell name.</param>
@@ -145,7 +146,7 @@ namespace Avoloos
                 var aoeRange = SpellAoERange(spellName);
                 var bestTarget = targetOverride ?? Adds
                     .Where(u => u.IsInCombatRangeAndLoS && u.DistanceSquared <= SpellMaxRangeSq(spellName) && bestTargetCondition(u))
-                    .OrderByDescending(u => Adds.Count(o => Vector3.DistanceSquared(u.Position, o.Position) <= aoeRange)).FirstOrDefault();
+                    .OrderByDescending(u => Adds.Count(o => Vector3.DistanceSquared(u.Position, o.Position) <= aoeRange)).FirstOrDefault() ?? Target;
 
                 return SpellIsCastOnTerrain(spellName) ? CastOnTerrain(
                     spellName,

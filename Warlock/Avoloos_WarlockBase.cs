@@ -134,8 +134,9 @@ namespace Avoloos
             /// <param name="spellName">Spell name.</param>
             /// <param name="castWhen">onlyCastWhen condition for Cast()</param>
             /// <param name="bestTargetCondition">Condition to limit the UnitObjects for a bestTarget</param>
+            /// <param name="preventTime">Milliseconds in which the spell won't be cast again</param>
             /// <param name="targetOverride">Spell will be cast on this target</param>
-            public bool CastSpellOnBestAoETarget(string spellName, Func<UnitObject, bool> castWhen = null, Func<UnitObject, bool> bestTargetCondition = null, UnitObject targetOverride = null)
+            public bool CastSpellOnBestAoETarget(string spellName, Func<UnitObject, bool> castWhen = null, Func<UnitObject, bool> bestTargetCondition = null, int preventTime = 0, UnitObject targetOverride = null)
             {
                 if (castWhen == null)
                     castWhen = (_) => true;
@@ -148,14 +149,28 @@ namespace Avoloos
                     .Where(u => u.IsInCombatRangeAndLoS && u.DistanceSquared <= SpellMaxRangeSq(spellName) && bestTargetCondition(u))
                     .OrderByDescending(u => Adds.Count(o => Vector3.DistanceSquared(u.Position, o.Position) <= aoeRange)).FirstOrDefault() ?? Target;
 
-                return SpellIsCastOnTerrain(spellName) ? CastOnTerrain(
+                if (preventTime == 0) {
+                    return SpellIsCastOnTerrain(spellName) ? CastOnTerrain(
+                        spellName,
+                        bestTarget.Position,
+                        () => castWhen(bestTarget)
+                    ) : Cast(
+                        spellName,
+                        bestTarget, 
+                        () => castWhen(bestTarget)
+                    );
+                }
+
+                return SpellIsCastOnTerrain(spellName) ? CastOnTerrainPreventDouble(
                     spellName,
                     bestTarget.Position,
-                    () => castWhen(bestTarget)
-                ) : Cast(
+                    () => castWhen(bestTarget),
+                    preventTime
+                ) : CastPreventDouble(
                     spellName,
+                    () => castWhen(bestTarget),
                     bestTarget, 
-                    () => castWhen(bestTarget)
+                    preventTime
                 );
             }
 

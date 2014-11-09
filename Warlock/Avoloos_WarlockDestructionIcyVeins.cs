@@ -28,62 +28,62 @@ namespace ReBot
 
         bool doMultitargetRotation(int mobsInFrontOfMe)
         {
+            Info("Multi Rotation START");
             int burningEmbers = Me.GetPower(WoWPowerType.WarlockDestructionBurningEmbers);
 
             if (CastOnTerrain(
                     "Shadowfury",
                     Target.Position,
-                    () => Adds.Count(x => x.DistanceSquaredTo(Target) <= 12 * 12) > 2
+                    () => Adds.Count(x => x.DistanceSquaredTo(Target) < SpellAoERange("Shadowfury")) > 3
+                    || Adds.Count(x => x.DistanceSquaredTo(Target) < SpellAoERange("Shadowfury") && x.IsCastingAndInterruptible()) >= 1
                 ))
                 return true;
            
             // Priority #1
-            if (HasSpell("Aftermath") && CastOnTerrainPreventDouble("Rain of Fire", Target.Position, null, 7500))
+            if (CastSpellOnBestAoETarget("Rain of Fire", u => !HasAura("Rain of Fire")))
                 return true;
 
             // Priority #2
             if (
-                mobsInFrontOfMe >= 3// Got a Group
-                && HasFelguard()// and Has a Felguard
-                && Cast("Command Demon") && HasGlobalCooldown())
-                return true;
-
-            if (
                 SpellCooldown("Havoc") <= 0.01 && burningEmbers >= 1 && mobsInFrontOfMe < 12) {
                 // Dont waste Havoc apply it to one of the mid-enemies (high max health, low current health)
-                var havocAdd = Adds.OrderByDescending(x => x.Health).FirstOrDefault(x => x.HealthFraction <= 0.4f) ?? Adds.FirstOrDefault();
+                var havocAdd = Adds
+                    .OrderByDescending(x => x.Health)
+                    .FirstOrDefault(x => x.HealthFraction <= 0.4f && x.IsInLoS && x.DistanceSquared <= SpellMaxRangeSq("Havoc")) ?? Adds.FirstOrDefault();
+
                 if (Cast("Havoc", havocAdd))
                     return true;
             }
 
             // cast Chaosbolt or shadowburn on target as soon as possible and if feasible
-            if (Adds.Count(x => x.HasAura("Havoc", true)) > 0) {
-                if (Cast("Shadowburn", () => mobsInFrontOfMe < 12))
+            if (Adds.Count(x => x.HasAura("Havoc", true)) > 0 || burningEmbers >= 4) {
+                var shadowBurnTarget = Adds
+                    .Where(x => x.HealthFraction <= 0.249 && !x.HasAura("Havoc") && x.IsInLoS && x.DistanceSquared <= SpellMaxRangeSq("Shadow Burn"))
+                    .OrderByDescending(x => x.MaxHealth)
+                    .FirstOrDefault() ?? Target;
+                    
+                if (Cast("Shadowburn", () => mobsInFrontOfMe < 12, shadowBurnTarget))
                     return true; 
                 if (Cast("Chaos Bolt", () => mobsInFrontOfMe < 6))
-                    return true; 
+                    return true;
             }
 
             // Priority #3
-            var countAddsInRange = Adds.Count(x => x.DistanceSquaredTo(Target) <= 12 * 12);
-            if (HasSpell("Fire and Brimstone")
-                && (
-                    ( burningEmbers >= 2 && countAddsInRange > 2 )
-                    || ( burningEmbers >= 1 && countAddsInRange >= 10 )
-                )) {
+            var countAddsInRange = Adds.Count(x => x.DistanceSquaredTo(Target) <= SpellAoERange("Conflagrate"));
+            if (( burningEmbers >= 2 && countAddsInRange > 2 )
+                || ( burningEmbers >= 1 && countAddsInRange >= 10 )) {
                 // Ensure Fire and Brimstone!
                 CastSelf("Fire and Brimstone", () => !HasAura("Fire and Brimstone"));
 
-                if (CastSpellOnAdds("Conflagrate"))
+                if (CastSpellOnBestAoETarget("Conflagrate"))
                     return true;
-                if (CastSpellPreventDoubleOnAdds(
-                        "Immolate",
-                        add => Adds.Count(y => !y.HasAura("Immolate") && y.HpLessThanOrElite(0.15)) > 2
-                    ))
+                if (CastSpellOnBestAoETarget("Immolate", y => !y.HasAura("Immolate") && y.HpLessThanOrElite(0.15)))
                     return true;
-                if (CastSpellOnAdds("Incinerate"))
+                if (CastSpellOnBestAoETarget("Incinerate"))
                     return true;
             }
+
+            Info("Multi Rotation END");
 
             return false;
         }
@@ -130,8 +130,8 @@ namespace ReBot
                 return;
 
             // Priority #3
-            if (Cast("Conflagrate"))
-                return; // No Stack detection sadly... otherwise we would check for 2
+            if (Cast("Conflagrate", () => SpellCharges("Conflagrate") >= 2))
+                return;
 
             // Priority #4
             if (Cast(
@@ -148,12 +148,12 @@ namespace ReBot
 
             // Priority #6
             // TODO: remember old cast position and check with target position and radius so we recast it when he gets out of the rain
-            if (HasSpell("Aftermath") && CastOnTerrainPreventDouble("Rain of Fire", Target.Position, null, 7500))
+            if (CastSpellOnBestAoETarget("Rain of Fire", u => !HasAura("Rain of Fire")))
                 return;
 
             // Priority #7
-            // Conflagrate is already done in #3
-            // No Stack detection sadly... otherwise we would check for 1
+            if (Cast("Conflagrate", () => SpellCharges("Conflagrate") >= 1))
+                return;
 
             // Priority #8
             if (Cast("Incinerate"))

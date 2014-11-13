@@ -136,19 +136,19 @@ namespace ReBot
         {
             if (Cast(
                     "Agony",
-                    () => Target.HpGreaterThanOrElite(0.3) && ( !Target.HasAura("Agony") || Target.AuraTimeRemaining("Agony") <= 7f ),
+                    () => u.HpGreaterThanOrElite(0.3) && ( !u.HasAura("Agony") || u.AuraTimeRemaining("Agony") <= 7f ),
                     u
                 ))
                 return true;
             if (Cast(
                     "Corruption",
-                    () => Target.HpGreaterThanOrElite(0.15) && ( !Target.HasAura("Corruption") || Target.AuraTimeRemaining("Corruption") <= 5f ),
+                    () => u.HpGreaterThanOrElite(0.15) && ( !u.HasAura("Corruption") || u.AuraTimeRemaining("Corruption") <= 5f ),
                     u
                 ))
                 return true;
             if (CastPreventDouble(
                     "Unstable Affliction",
-                    () => Target.HpGreaterThanOrElite(0.2) && ( !Target.HasAura("Unstable Affliction") || Target.AuraTimeRemaining("Unstable Affliction") <= 5f ),
+                    () => u.HpGreaterThanOrElite(0.2) && ( !u.HasAura("Unstable Affliction") || u.AuraTimeRemaining("Unstable Affliction") <= 5f ),
                     u
                 ))
                 return true;

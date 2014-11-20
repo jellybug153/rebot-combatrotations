@@ -6,6 +6,7 @@ using WarlockCommon;
 using System;
 using System.Collections.Generic;
 using Geometry;
+using System.Runtime.InteropServices;
 
 namespace Avoloos
 {
@@ -74,19 +75,31 @@ namespace Avoloos
             /// <summary>
             /// The selected pet.
             /// </summary>
-            [JsonProperty("Selected Pet"), JsonConverter(typeof(StringEnumConverter))]
+            [JsonProperty("Pet: Selected Pet"), JsonConverter(typeof(StringEnumConverter))]
             public WarlockPet SelectedPet = WarlockPet.AutoSelect;
 
             /// <summary>
             /// Should use pet?
             /// </summary>
-            [JsonProperty("Use Pet")]
+            [JsonProperty("Pet: Use Pet")]
             public bool UsePet = true;
+
+            /// <summary>
+            /// When should the warlock use HealtFunnel to heal the pet
+            /// </summary>
+            [JsonProperty("Pet: HealthFunnel Pet HP in %")]
+            public int FunnelPetHp = 100;
+
+            /// <summary>
+            /// How much life does the player need to have to use Healtfunnel
+            /// </summary>
+            [JsonProperty("Pet: HealthFunnel Player HP in %")]
+            public int FunnelPlayerHp = 100;
 
             /// <summary>
             /// Should the bot use Terrorguard/Infernal
             /// </summary>
-            [JsonProperty("Use Terrorguard")]
+            [JsonProperty("DPS: Use Terrorguard")]
             public bool UseAdditionalDPSPet = true;
 
             /// <summary>
@@ -100,7 +113,7 @@ namespace Avoloos
             /// </summary>
             [JsonProperty("PvP: Fear Ban Time")]
             public int FearBanTime = 10000;
-            
+
             /// <summary>
             /// The fear tracking list.
             /// </summary>
@@ -114,8 +127,8 @@ namespace Avoloos
                 { "Hand of Gul'dan", 6 * 6 },
                 { "Felstorm", 8 * 8 },
                 { "Shadowfury", 8 * 8 },
-                { "Immolate", 10 * 10 },
-                { "Conflagrate", 10 * 10 },
+                { "Immolate", 10 * 10 }, // Fire and Brimstone Version
+                { "Conflagrate", 10 * 10 }, // Fire and Brimstone Version
             };
 
             /// <summary>
@@ -195,6 +208,11 @@ namespace Avoloos
                 return aoeRange;
             }
 
+            /// <summary>
+            /// Checks if the given Spell has to be cast on terrain.
+            /// </summary>
+            /// <returns><c>true</c>, if spell has to be cast on terrain, <c>false</c> otherwise.</returns>
+            /// <param name="spellName">Spell name.</param>
             public bool SpellIsCastOnTerrain(string spellName)
             {
                 switch (spellName) {
@@ -345,8 +363,30 @@ namespace Avoloos
                     return true;
 
 
+                if (SummonPet())
+                    return true;
+
+                return CastSelfPreventDouble("Create Healthstone", () => Inventory.Healthstone == null, 10000);
+            }
+
+            /// <summary>
+            /// Summons the pet.
+            /// </summary>
+            /// <returns><c>true</c>, if pet was summoned, <c>false</c> otherwise.</returns>
+            public bool SummonPet()
+            {
                 if (HasSpell("Grimoire of Sacrifice")) {
                     if (!HasAura("Grimoire of Sacrifice")) {
+                        if (CastSelf(
+                                "Flames of Xoroth",
+                                () => !Me.HasAlivePet && Me.GetPower(WoWPowerType.WarlockDestructionBurningEmbers) >= 1
+                            ))
+                            return true;
+
+                        CastSelf(
+                            "Soulburn",
+                            () => !Me.HasAlivePet && Me.GetPower(WoWPowerType.WarlockSoulShards) >= 1
+                        );
                         if (this.SummonPet(SelectedPet))
                             return true;
                         if (CastSelf("Grimoire of Sacrifice", () => Me.HasAlivePet))
@@ -358,13 +398,17 @@ namespace Avoloos
                             () => !Me.HasAlivePet && Me.GetPower(WoWPowerType.WarlockDestructionBurningEmbers) >= 1
                         ))
                         return true;
+                    CastSelf(
+                        "Soulburn",
+                        () => !Me.HasAlivePet && Me.GetPower(WoWPowerType.WarlockSoulShards) >= 1
+                    );
                     if (this.SummonPet(SelectedPet))
                         return true;
                 } else if (Me.HasAlivePet) {
                     Me.PetDismiss();
                 }
 
-                return CastSelfPreventDouble("Create Healthstone", () => Inventory.Healthstone == null, 10000);
+                return false;
             }
 
             /// <summary>
@@ -456,12 +500,10 @@ namespace Avoloos
             {
                 if (Cast("Mortal Coil", () => Me.HealthFraction <= 0.5))
                     return true;
-
-                if (CastSelf(
-                        "Flames of Xoroth",
-                        () => !HasSpell("Grimoire of Sacrifice") && !Me.HasAlivePet && Me.GetPower(WoWPowerType.WarlockDestructionBurningEmbers) >= 1
-                    ))
+                    
+                if (SummonPet())
                     return true;
+
                 if (CastOnTerrain(
                         HasAura("Grimoire of Supremacy") ? "Summon Abyssal" : "Summon Infernal",
                         Target.Position,
@@ -475,6 +517,15 @@ namespace Avoloos
                 if (CastSelf(
                         "Ember Tap",
                         () => Me.HealthFraction <= 0.35 && Me.GetPower(WoWPowerType.WarlockDestructionBurningEmbers) >= 1
+                    ))
+                    return true;
+
+                if (Cast(
+                        "Health Funnel",
+                        Me.Pet,
+                        () => 
+                           Me.Pet.HealthFraction <= ( FunnelPetHp / 100 )
+                        && Me.HealthFraction >= ( FunnelPlayerHp / 100 )
                     ))
                     return true;
 

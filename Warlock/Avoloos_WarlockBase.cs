@@ -88,13 +88,13 @@ namespace Avoloos
             /// When should the warlock use HealtFunnel to heal the pet
             /// </summary>
             [JsonProperty("Pet: HealthFunnel Pet HP in %")]
-            public int FunnelPetHp = 100;
+            public int FunnelPetHp = 40;
 
             /// <summary>
             /// How much life does the player need to have to use Healtfunnel
             /// </summary>
             [JsonProperty("Pet: HealthFunnel Player HP in %")]
-            public int FunnelPlayerHp = 100;
+            public int FunnelPlayerHp = 90;
 
             /// <summary>
             /// Should the bot use Terrorguard/Infernal

@@ -41,6 +41,9 @@ namespace ReBot
                 ))
                 return true;
            
+            if (mobsInFrontOfMe >= 3)
+                CastSelf("Mannoroth's Fury", () => HasSpell("Mannoroth's Fury") && !Me.HasAura("Mannoroth's Fury"));
+
             // Priority #1
             if (CastSpellOnBestAoETarget("Rain of Fire", u => !HasAura("Rain of Fire")))
                 return true;

@@ -104,6 +104,7 @@ namespace ReBot
 
             // TODO: find a way to get close to the enemies (leap there?)
             if (doHellfire || doImmolationAura) {
+                CastSelf("Mannoroth's Fury", () => HasSpell("Mannoroth's Fury") && !Me.HasAura("Mannoroth's Fury"));
                 if (CastVariant("Hellfire", "Immolation Aura", Me))
                     return true;
             }

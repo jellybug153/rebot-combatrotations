@@ -47,6 +47,7 @@ namespace ReBot
                         () => !Me.HasAura("Soulburn")
                     ))
                     return true;
+                CastSelf("Mannoroth's Fury", () => HasSpell("Mannoroth's Fury") && !Me.HasAura("Mannoroth's Fury"));
             }
             if (Me.HasAura("Soulburn")) {
                 if (CastSpellOnBestAoETarget(

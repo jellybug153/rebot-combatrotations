@@ -24,7 +24,9 @@ namespace ReBot
                 ( CurrentBotName == "PvP" ? "Create Soulwell" : null )
             };
             PullSpells = new[] {
-                "Shadow Bolt"
+                "Agony",
+                "Corruption",
+                "Drain Soul"
             };
         }
 

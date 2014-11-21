@@ -481,7 +481,6 @@ namespace Avoloos
                 CastSelf("Sacrificial Pact", () => Me.HealthFraction < 0.6);
                 CastSelf("Unending Resolve", () => Me.HealthFraction <= 0.5);
                 CastSelf("Dark Regeneration", () => Me.HealthFraction <= 0.6);
-                //CastSelf("Demonic Rebirth", () => Me.HealthFraction < 0.9 && Target.IsInCombatRangeAndLoS); - Does not exist anymore
 
                 if (Me.HasAlivePet) {
                     UnitObject add = Adds.FirstOrDefault(x => x.Target == Me);

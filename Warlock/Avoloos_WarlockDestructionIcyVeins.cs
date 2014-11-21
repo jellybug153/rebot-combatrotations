@@ -21,7 +21,9 @@ namespace ReBot
                 ( CurrentBotName == "PvP" ? "Create Soulwell" : null )
             };
             PullSpells = new[] {
-                "Conflagrate"
+                "Immolate",
+                "Conflagrate",
+                "Incinerate"
             };
             UsePet = true;
         }

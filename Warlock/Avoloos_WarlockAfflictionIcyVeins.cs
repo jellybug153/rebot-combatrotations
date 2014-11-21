@@ -42,13 +42,10 @@ namespace ReBot
              * Against 5 or more enemies, you will need to start using Soulburn with Seed of Corruption
              */
             if (mobsInFrontOfMe >= 5) {
-                if (CastSelf(
-                        "Soulburn",
-                        () => !Me.HasAura("Soulburn")
-                    ))
-                    return true;
                 CastSelf("Mannoroth's Fury", () => HasSpell("Mannoroth's Fury") && !Me.HasAura("Mannoroth's Fury"));
+                CastSelf("Soulburn", () => !Me.HasAura("Soulburn"));
             }
+
             if (Me.HasAura("Soulburn")) {
                 if (CastSpellOnBestAoETarget(
                         "Seed of Corruption",

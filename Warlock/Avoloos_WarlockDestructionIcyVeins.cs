@@ -30,7 +30,6 @@ namespace ReBot
 
         bool doMultitargetRotation(int mobsInFrontOfMe)
         {
-            Info("Multi Rotation START");
             int burningEmbers = Me.GetPower(WoWPowerType.WarlockDestructionBurningEmbers);
 
             if (CastOnTerrain(
@@ -87,8 +86,6 @@ namespace ReBot
                 if (CastSpellOnBestAoETarget("Incinerate"))
                     return true;
             }
-
-            Info("Multi Rotation END");
 
             return false;
         }

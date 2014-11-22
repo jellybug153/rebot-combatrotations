@@ -35,6 +35,12 @@ namespace ReBot
         [JsonProperty("DPS: Use Hellfire (disable for leveling!)")]
         public bool UseHellfire = false;
 
+        /// <summary>
+        /// Should the bot use Terrorguard/Infernal
+        /// </summary>
+        [JsonProperty("DPS: Minimal Health to do Hellfire in %")]
+        public int HellfireHealthPercentage = 35;
+
         //[JsonProperty("DPS: Move near target for Hellfire (not used atm.)")]
         //public bool DoMoveHellfireImmolation = true;
 
@@ -112,7 +118,13 @@ namespace ReBot
             // TODO: find a way to get close to the enemies (leap there?)
             if (doHellfire || doImmolationAura) {
                 CastSelf("Mannoroth's Fury", () => HasSpell("Mannoroth's Fury") && !Me.HasAura("Mannoroth's Fury"));
-                if (CastVariant("Hellfire", "Immolation Aura", Me))
+                if (CastVariant(
+                        "Hellfire",
+                        "Immolation Aura",
+                        Me,
+                        null,
+                        (u) => Me.HealthFraction > ( HellfireHealthPercentage / 100 )
+                    ))
                     return true;
             }
 

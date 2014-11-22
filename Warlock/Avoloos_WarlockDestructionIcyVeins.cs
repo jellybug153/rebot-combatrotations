@@ -2,6 +2,8 @@ using System.Linq;
 using ReBot.API;
 using System;
 using Avoloos.Warlock;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace ReBot
 {
@@ -14,6 +16,18 @@ namespace ReBot
     )]
     public class AvoloosWarlockDestructionIcyVeins : WarlockBaseRotation
     {
+        /// <summary>
+        /// Health in % the target of havoc should have.
+        /// </summary>
+        [JsonProperty("DPS: Use Havoc on Mobs with HP in %")]
+        public int HavocHealthPercentage = 40;
+
+        /// <summary>
+        /// Should havoc only be cast on focus / focus target if focus is friendly
+        /// </summary>
+        [JsonProperty("DPS: Use Havoc on your Focus (if friendly on its Target")]
+        public bool UseHavocOnFocus = true;
+
         public AvoloosWarlockDestructionIcyVeins()
         {
             GroupBuffs = new[] {
@@ -31,14 +45,6 @@ namespace ReBot
         bool doMultitargetRotation(int mobsInFrontOfMe)
         {
             int burningEmbers = Me.GetPower(WoWPowerType.WarlockDestructionBurningEmbers);
-
-            if (CastOnTerrain(
-                    "Shadowfury",
-                    Target.Position,
-                    () => Adds.Count(x => x.DistanceSquaredTo(Target) < SpellAoERange("Shadowfury")) > 3
-                    || Adds.Count(x => x.DistanceSquaredTo(Target) < SpellAoERange("Shadowfury") && x.IsCastingAndInterruptible()) >= 1
-                ))
-                return true;
            
             if (mobsInFrontOfMe >= 3)
                 CastSelf("Mannoroth's Fury", () => HasSpell("Mannoroth's Fury") && !Me.HasAura("Mannoroth's Fury"));
@@ -51,11 +57,17 @@ namespace ReBot
             if (
                 SpellCooldown("Havoc") <= 0.01 && burningEmbers >= 1 && mobsInFrontOfMe < 12) {
                 // Dont waste Havoc apply it to one of the mid-enemies (high max health, low current health)
-                var havocAdd = Adds
-                    .OrderByDescending(x => x.Health)
-                    .FirstOrDefault(x => x.HealthFraction <= 0.4f && x.IsInLoS && x.DistanceSquared <= SpellMaxRangeSq("Havoc")) ?? Adds.FirstOrDefault();
+                var havocAdd = Me.Focus;
 
-                if (Cast("Havoc", havocAdd))
+                if (!UseHavocOnFocus)
+                    havocAdd = Adds
+                                .OrderByDescending(x => x.Health)
+                                .FirstOrDefault(x => x.HealthFraction <= 0.4f && x.IsInLoS && x.DistanceSquared <= SpellMaxRangeSq("Havoc")) ?? Adds.FirstOrDefault();
+
+                if (havocAdd.IsFriendly)
+                    havocAdd = havocAdd.Target;
+
+                if (havocAdd != null && Cast("Havoc", havocAdd))
                     return true;
             }
 

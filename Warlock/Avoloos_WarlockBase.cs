@@ -103,6 +103,12 @@ namespace Avoloos
             public bool UseAdditionalDPSPet = true;
 
             /// <summary>
+            /// Should Shadofury be used to intterupt?
+            /// </summary>
+            [JsonProperty("CC: Use Shadowfury as Interrupt")]
+            public bool UseShadowfuryAsInterrupt = true;
+
+            /// <summary>
             /// Should the Bot fear?
             /// </summary>
             [JsonProperty("PvP: Do Fear")]
@@ -216,6 +222,8 @@ namespace Avoloos
             public bool SpellIsCastOnTerrain(string spellName)
             {
                 switch (spellName) {
+                    case "Shadowfury":
+                        return true;
                     case "Rain of Fire":
                         return true;
                     case "Hand of Gul'dan":
@@ -281,6 +289,23 @@ namespace Avoloos
                         ))
                         return true;
                 }
+
+                return false;
+            }
+
+            protected bool CastShadowfuryIfFeasible()
+            {
+                if (!UseShadowfuryAsInterrupt
+                    && Adds.Count >= 2
+                    && CastSpellOnBestAoETarget("Shadowfury"))
+                    return true;
+
+                if (UseShadowfuryAsInterrupt && CastSpellOnBestAoETarget(
+                        "Shadowfury", 
+                        (u) => u.IsCastingAndInterruptible(), 
+                        (u) => u.IsCastingAndInterruptible()
+                    ))
+                    return true;
 
                 return false;
             }

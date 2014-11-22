@@ -245,6 +245,9 @@ namespace ReBot
             if (CurrentBotName == "PvP" && CastFearIfFeasible())
                 return;
 
+            if (CastShadowfuryIfFeasible())
+                return;
+
             if (DoMetamorphosis())
                 return;
 

@@ -99,6 +99,8 @@ namespace ReBot
                 return;
             if (CurrentBotName == "PvP" && CastFearIfFeasible())
                 return;
+            if (CastShadowfuryIfFeasible())
+                return;
 
             int burningEmbers = Me.GetPower(WoWPowerType.WarlockDestructionBurningEmbers);
 

@@ -83,6 +83,9 @@ namespace ReBot
             if (DoSomePetAndHealingStuff())
                 return;
 
+            if (CastShadowfuryIfFeasible())
+                return;
+
             // Mana management
             if (AutomaticManaManagement && CastSelfPreventDouble(
                     "Life Tap",

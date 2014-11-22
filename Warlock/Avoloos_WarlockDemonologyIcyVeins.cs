@@ -28,8 +28,15 @@ namespace ReBot
     )]
     public sealed class AvoloosWarlockDemonologyIcyVeins : WarlockBaseRotation
     {
-        [JsonProperty("Move near target for Hellfire")]
-        public bool DoMoveHellfireImmolation = true;
+
+        /// <summary>
+        /// Should the bot use Terrorguard/Infernal
+        /// </summary>
+        [JsonProperty("DPS: Use Hellfire (disable for leveling!)")]
+        public bool UseHellfire = false;
+
+        //[JsonProperty("DPS: Move near target for Hellfire (not used atm.)")]
+        //public bool DoMoveHellfireImmolation = true;
 
         /// <summary>
         /// The hand of guldan spell lock.
@@ -70,7 +77,7 @@ namespace ReBot
                 doSoulFire = false;
             } else if (mobsInFrontOfMe >= 4) {
                 // TODO: Support Mannoroth's Fury
-                doHellfire = !HasMetamorphosis;
+                doHellfire = !HasMetamorphosis && UseHellfire;
                 MinMoltenStacksForSoulfire = 10;
             } else if (mobsInFrontOfMe >= 3) {
                 doImmolationAura = HasMetamorphosis;

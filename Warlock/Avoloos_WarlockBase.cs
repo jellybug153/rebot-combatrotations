@@ -215,6 +215,15 @@ namespace Avoloos
             }
 
             /// <summary>
+            /// Determines whether the player has hand of guldan glyphed.
+            /// </summary>
+            /// <returns><c>true</c> if this hand of guldan is glyph; otherwise, <c>false</c>.</returns>
+            public bool HasHandOfGuldanGlyph()
+            {
+                return API.LuaIf("for i = 1, NUM_GLYPH_SLOTS do local _,_,_,glyphSpellID,_ = GetGlyphSocketInfo(i); if(glyphSpellID == 56248) then return true end end return false");
+            }
+
+            /// <summary>
             /// Checks if the given Spell has to be cast on terrain.
             /// </summary>
             /// <returns><c>true</c>, if spell has to be cast on terrain, <c>false</c> otherwise.</returns>
@@ -227,7 +236,7 @@ namespace Avoloos
                     case "Rain of Fire":
                         return true;
                     case "Hand of Gul'dan":
-                        return HasGlyph(56248);
+                        return HasHandOfGuldanGlyph();
                     default:
                         return false;
                 }

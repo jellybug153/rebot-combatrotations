@@ -555,11 +555,11 @@ namespace Avoloos
                     ))
                     return true;
 
-                if (Cast(
+                if (CastSelf(
                         "Health Funnel",
-                        Me.Pet,
                         () => 
-                           Me.Pet.HealthFraction <= ( FunnelPetHp / 100 )
+                           Me.HasAlivePet
+                        && Me.Pet.HealthFraction <= ( FunnelPetHp / 100 )
                         && Me.HealthFraction >= ( FunnelPlayerHp / 100 )
                     ))
                     return true;

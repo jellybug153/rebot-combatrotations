@@ -540,11 +540,11 @@ namespace Avoloos
                     return true;
 
                 if (CastOnTerrain(
-                        HasAura("Grimoire of Supremacy") ? "Summon Abyssal" : "Summon Infernal",
+                        HasSpell("Grimoire of Supremacy") ? "Summon Abyssal" : "Summon Infernal",
                         Target.Position,
                         () => UseAdditionalDPSPet && ( Me.HpLessThanOrElite(0.5) || Adds.Count >= 3 )
                     ) || Cast(
-                        HasAura("Grimoire of Supremacy") ? "Summon Terrorguard" : "Summon Doomguard",
+                        HasSpell("Grimoire of Supremacy") ? "Summon Terrorguard" : "Summon Doomguard",
                         () => UseAdditionalDPSPet && Me.HpLessThanOrElite(0.5)
                     ))
                     return true;

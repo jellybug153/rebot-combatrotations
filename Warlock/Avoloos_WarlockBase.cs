@@ -475,17 +475,17 @@ namespace Avoloos
                 CastSelfPreventDouble(
                     "Dark Soul: Instability",
                     () => Target.IsInCombatRangeAndLoS,
-                    120000
+                    20000
                 );
                 CastSelfPreventDouble(
                     "Dark Soul: Knowledge",
                     () => Target.IsInCombatRangeAndLoS,
-                    120000
+                    20000
                 );
                 CastSelfPreventDouble(
                     "Dark Soul: Misery",
                     () => Target.IsInCombatRangeAndLoS,
-                    120000
+                    20000
                 );
 
                 Cast(

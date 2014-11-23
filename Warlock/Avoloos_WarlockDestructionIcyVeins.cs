@@ -87,7 +87,7 @@ namespace ReBot
             // Priority #3
             var countAddsInRange = Adds.Count(x => x.DistanceSquaredTo(Target) <= SpellAoERange("Conflagrate"));
             if (( burningEmbers >= 2 && countAddsInRange > 2 )
-                || ( burningEmbers >= 1 && countAddsInRange >= 10 )) {
+                || ( burningEmbers >= 1 && countAddsInRange >= 8 )) {
                 // Ensure Fire and Brimstone!
                 CastSelf("Fire and Brimstone", () => !HasAura("Fire and Brimstone"));
 

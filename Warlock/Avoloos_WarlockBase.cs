@@ -325,6 +325,8 @@ namespace Avoloos
             /// <returns><c>true</c> if the current pet is a Felguard; otherwise, <c>false</c>.</returns>
             protected bool HasFelguard()
             {
+                if (!Me.HasAlivePet)
+                    return false;
                 return ( WlPetDisplayId.Felguard.Equals(Me.Pet.DisplayId) || WlPetDisplayId.ImpFelguard.Equals(Me.Pet.DisplayId) );
             }
 

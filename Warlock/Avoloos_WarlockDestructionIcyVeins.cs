@@ -64,7 +64,7 @@ namespace ReBot
                                 .OrderByDescending(x => x.Health)
                                 .FirstOrDefault(x => x.HealthFraction <= 0.4f && x.IsInLoS && x.DistanceSquared <= SpellMaxRangeSq("Havoc")) ?? Adds.FirstOrDefault();
 
-                if (havocAdd.IsFriendly)
+                if (havocAdd != null && havocAdd.IsFriendly)
                     havocAdd = havocAdd.Target;
 
                 if (havocAdd != null && Cast("Havoc", havocAdd))

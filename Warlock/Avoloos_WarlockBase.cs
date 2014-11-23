@@ -421,7 +421,9 @@ namespace Avoloos
 
                         CastSelf(
                             "Soulburn",
-                            () => !Me.HasAlivePet && Me.GetPower(WoWPowerType.WarlockSoulShards) >= 1
+                            () => !Me.HasAlivePet
+                            && Me.GetPower(WoWPowerType.WarlockSoulShards) >= 1
+                            && !HasAura("Soulburn")
                         );
                         if (this.SummonPet(SelectedPet))
                             return true;

@@ -121,6 +121,12 @@ namespace Avoloos
             public int FearBanTime = 10000;
 
             /// <summary>
+            /// Should the OOC-Rotation be disabled for the Fishingbot?
+            /// </summary>
+            [JsonProperty("General: Disable OutOfCombat for FishBot")]
+            public bool DisableOutOfCombatFishbot = true;
+
+            /// <summary>
             /// The fear tracking list.
             /// </summary>
             protected List<ExpirableObject> FearTrackingList;
@@ -388,6 +394,9 @@ namespace Avoloos
             /// <returns><c>true</c>, if the function should be called again, <c>false</c> otherwise.</returns>
             public override bool OutOfCombat()
             {
+                if (DisableOutOfCombatFishbot && ( CurrentBotName == "Fish" || CurrentBotName == "Auction" ))
+                    return false;
+
                 CastSelf("Metamorphosis", () => Me.HasAura("Metamorphosis"));
                 CastSelf("Fire and Brimstone", () => Me.HasAura("Fire and Brimstone"));
 

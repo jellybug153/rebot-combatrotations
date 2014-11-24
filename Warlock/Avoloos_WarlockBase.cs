@@ -121,6 +121,12 @@ namespace Avoloos
             public int FearBanTime = 10000;
 
             /// <summary>
+            /// Should soulstone be used for the player if he is not in a group?
+            /// </summary>
+            [JsonProperty("Survival: Soulstone yourself if not in group")]
+            public bool UseSelfSoulstone = true;
+
+            /// <summary>
             /// Should the OOC-Rotation be disabled for the Fishingbot?
             /// </summary>
             [JsonProperty("General: Disable OutOfCombat for FishBot")]
@@ -404,7 +410,13 @@ namespace Avoloos
                     return true;
                 if (CastSelf("Unending Breath", () => Me.IsSwimming && !Me.HasAura("Unending Breath")))
                     return true;
-                if (CastSelf("Soulstone", () => CurrentBotName != "Combat" && !Me.HasAura("Soulstone")))
+                if (CastSelf(
+                        "Soulstone",
+                        () => UseSelfSoulstone
+                        && CurrentBotName != "Combat"
+                        && !Me.HasAura("Soulstone")
+                        && API.LuaIf("GetNumGroupMembers() > 0")
+                    ))
                     return true;
 
 

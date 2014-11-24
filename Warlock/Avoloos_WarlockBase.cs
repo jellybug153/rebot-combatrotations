@@ -430,7 +430,7 @@ namespace Avoloos
                         if (CastSelf("Grimoire of Sacrifice", () => Me.HasAlivePet))
                             return true;
                     }
-                } else if (UsePet) {
+                } else if (UsePet && Me.InCombat && (HasSpell("Flames of Xoroth") || HasSpell("Soulburn"))) {
                     if (CastSelf(
                             "Flames of Xoroth",
                             () => !Me.HasAlivePet && Me.GetPower(WoWPowerType.WarlockDestructionBurningEmbers) >= 1
@@ -442,7 +442,10 @@ namespace Avoloos
                     );
                     if (this.SummonPet(SelectedPet))
                         return true;
-                } else if (Me.HasAlivePet) {
+                } else if (UsePet && !Me.InCombat) {
+					if (this.SummonPet(SelectedPet))
+                        return true;
+				} else if (Me.HasAlivePet) {
                     Me.PetDismiss();
                 }
 

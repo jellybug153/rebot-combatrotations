@@ -445,7 +445,7 @@ namespace Avoloos
                 } else if (UsePet && !Me.InCombat) {
 					if (this.SummonPet(SelectedPet))
                         return true;
-				} else if (Me.HasAlivePet) {
+				} else if (Me.HasAlivePet && !Me.InCombat) {
                     Me.PetDismiss();
                 }
 

@@ -99,7 +99,7 @@ namespace Avoloos
             /// <summary>
             /// Should the bot use Terrorguard/Infernal
             /// </summary>
-            [JsonProperty("DPS: Use Terrorguard")]
+            [JsonProperty("DPS: Use Terrorguard/Infernal automatically")]
             public bool UseAdditionalDPSPet = true;
 
             /// <summary>

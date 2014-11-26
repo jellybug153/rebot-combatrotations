@@ -132,6 +132,9 @@ namespace Avoloos
             [JsonProperty("General: Disable OutOfCombat for FishBot")]
             public bool DisableOutOfCombatFishbot = true;
 
+            [JsonProperty("General: Automatic mana-management through Life Tap")]
+            public bool AutomaticManaManagement = true;
+
             /// <summary>
             /// The fear tracking list.
             /// </summary>
@@ -487,10 +490,10 @@ namespace Avoloos
             }
 
             /// <summary>
-            /// Do the stuff which got no GCD.
+            /// Do all the basic stuff which is shared among all specialisations.
             /// </summary>
             /// <returns><c>true</c>, if there was an GCD after a cast, <c>false</c> otherwise.</returns>
-            protected bool DoGlobalStuff()
+            protected bool DoSharedRotation()
             {
                 //no globalcd
                 CastSelfPreventDouble(
@@ -546,48 +549,53 @@ namespace Avoloos
                     if (add != null)
                         Me.PetAttack(add);
                 }
-                    
-                return HasGlobalCooldown();
-            }
 
-            /// <summary>
-            /// This function will keep your pet alive, do some CD DPS and heal yourself if needed and possible.
-            /// </summary>
-            /// <returns><c>true</c>, if a GCD spell as cast, <c>false</c> otherwise.</returns>
-            protected bool DoSomePetAndHealingStuff()
-            {
                 if (Cast("Mortal Coil", () => Me.HealthFraction <= 0.5))
                     return true;
-                    
+
                 if (SummonPet())
                     return true;
 
                 if (CastOnTerrain(
-                        HasSpell("Grimoire of Supremacy") ? "Summon Abyssal" : "Summon Infernal",
-                        Target.Position,
-                        () => UseAdditionalDPSPet && ( Me.HpLessThanOrElite(0.5) || Adds.Count >= 3 )
-                    ) || Cast(
-                        HasSpell("Grimoire of Supremacy") ? "Summon Terrorguard" : "Summon Doomguard",
-                        () => UseAdditionalDPSPet && Me.HpLessThanOrElite(0.5)
-                    ))
-                    return true;
-               
-                if (CastSelf(
-                        "Ember Tap",
-                        () => Me.HealthFraction <= 0.35 && Me.GetPower(WoWPowerType.WarlockDestructionBurningEmbers) >= 1
-                    ))
+                    HasSpell("Grimoire of Supremacy") ? "Summon Abyssal" : "Summon Infernal",
+                    Target.Position,
+                    () => UseAdditionalDPSPet && ( Me.HpLessThanOrElite(0.5) || Adds.Count >= 3 )
+                ) || Cast(
+                    HasSpell("Grimoire of Supremacy") ? "Summon Terrorguard" : "Summon Doomguard",
+                    () => UseAdditionalDPSPet && Me.HpLessThanOrElite(0.5)
+                ))
                     return true;
 
                 if (CastSelf(
-                        "Health Funnel",
-                        () => 
-                           Me.HasAlivePet
-                        && Me.Pet.HealthFraction <= ( FunnelPetHp / 100 )
-                        && Me.HealthFraction >= ( FunnelPlayerHp / 100 )
-                    ))
+                    "Ember Tap",
+                    () => Me.HealthFraction <= 0.35 && Me.GetPower(WoWPowerType.WarlockDestructionBurningEmbers) >= 1
+                ))
                     return true;
 
-                return false;
+                if (CastSelf(
+                    "Health Funnel",
+                    () => 
+                    Me.HasAlivePet
+                    && Me.Pet.HealthFraction <= ( FunnelPetHp / 100 )
+                    && Me.HealthFraction >= ( FunnelPlayerHp / 100 )
+                ))
+                    return true;
+                    
+                if (CurrentBotName == "PvP" && CastFearIfFeasible())
+                    return true;
+
+                if (CastShadowfuryIfFeasible())
+                    return true;
+
+                // Mana management
+                if (HasSpell("Life Tap") && AutomaticManaManagement && CastSelfPreventDouble(
+                    "Life Tap",
+                    () => Me.HealthFraction >= 0.65 && Me.Mana <= Me.Health * 0.16,
+                    20
+                ))
+                    return true;
+                    
+                return HasGlobalCooldown();
             }
         }
     }

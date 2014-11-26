@@ -103,6 +103,12 @@ namespace Avoloos
             public bool UseAdditionalDPSPet = true;
 
             /// <summary>
+            /// Should the bot use dark Soul
+            /// </summary>
+            [JsonProperty("DPS: Use Dark Soul automatically")]
+            public bool UseDarkSoul = true;
+
+            /// <summary>
             /// Should Shadofury be used to intterupt?
             /// </summary>
             [JsonProperty("CC: Use Shadowfury as Interrupt")]
@@ -495,22 +501,25 @@ namespace Avoloos
             /// <returns><c>true</c>, if there was an GCD after a cast, <c>false</c> otherwise.</returns>
             protected bool DoSharedRotation()
             {
-                //no globalcd
-                CastSelfPreventDouble(
-                    "Dark Soul: Instability",
-                    () => Target.IsInCombatRangeAndLoS,
-                    20000
-                );
-                CastSelfPreventDouble(
-                    "Dark Soul: Knowledge",
-                    () => Target.IsInCombatRangeAndLoS,
-                    20000
-                );
-                CastSelfPreventDouble(
-                    "Dark Soul: Misery",
-                    () => Target.IsInCombatRangeAndLoS,
-                    20000
-                );
+                if(UseDarkSoul)
+                {
+                    //no globalcd
+                    CastSelfPreventDouble(
+                        "Dark Soul: Instability",
+                        () => Target.IsInCombatRangeAndLoS && Target.MaxHealth > Me.MaxHealth && Target.IsElite(),
+                        20000
+                    );
+                    CastSelfPreventDouble(
+                        "Dark Soul: Knowledge",
+                        () => Target.IsInCombatRangeAndLoS && Target.MaxHealth > Me.MaxHealth && Target.IsElite(),
+                        20000
+                    );
+                    CastSelfPreventDouble(
+                        "Dark Soul: Misery",
+                        () => Target.IsInCombatRangeAndLoS && Target.MaxHealth > Me.MaxHealth && Target.IsElite(),
+                        20000
+                    );
+                }
 
                 Cast(
                     "Command Demon",

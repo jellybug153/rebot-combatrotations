@@ -50,9 +50,11 @@ namespace ReBot
                 CastSelf("Mannoroth's Fury", () => HasSpell("Mannoroth's Fury") && !Me.HasAura("Mannoroth's Fury"));
 
             // Priority #1
-            if (CastSpellOnBestAoETarget("Rain of Fire", u => !HasAura("Rain of Fire")))
-                return true;
-
+			if (mobsInFrontOfMe > 1) {
+				if (CastSpellOnBestAoETarget("Rain of Fire", u => !HasAura("Rain of Fire")))
+					return true;
+			}
+	
             // Priority #2
             if (
                 SpellCooldown("Havoc") <= 0.01 && burningEmbers >= 1 && mobsInFrontOfMe < 12) {

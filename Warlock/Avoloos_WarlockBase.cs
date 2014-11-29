@@ -564,6 +564,11 @@ namespace Avoloos
                     
                 if (SummonPet())
                     return true;
+	
+				if (( this.IsPetActive("Summon Imp") || SelectedPet == WarlockPet.SoulImp ) && Me.HealthFraction <= 0.75) {
+					if (Cast("Cauterize Master"))
+						return true;
+				}
 
                 if (CastOnTerrain(
                         HasSpell("Grimoire of Supremacy") ? "Summon Abyssal" : "Summon Infernal",

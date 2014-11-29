@@ -104,14 +104,7 @@ namespace ReBot
 
         public override void Combat()
         {
-            // Standard foo
-            if (DoGlobalStuff())
-                return;
-            if (DoSomePetAndHealingStuff())
-                return;
-            if (CurrentBotName == "PvP" && CastFearIfFeasible())
-                return;
-            if (CastShadowfuryIfFeasible())
+            if (DoSharedRotation())
                 return;
 
             int burningEmbers = Me.GetPower(WoWPowerType.WarlockDestructionBurningEmbers);

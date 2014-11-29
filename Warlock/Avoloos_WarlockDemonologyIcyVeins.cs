@@ -233,25 +233,13 @@ namespace ReBot
 
         public override void Combat()
         {
-            // reset some vars
+            // reset some demonology vars (like hand of gul'dan lock)
             ResetRotationVariables();
 
-            if (DoGlobalStuff())
-                return;
-            if (DoSomePetAndHealingStuff())
-                return;
-            //if (CastPreventDouble("Drain Life", () => Me.HealthFraction < 0.5, 10000)) return;
-
-            if (CurrentBotName == "PvP" && CastFearIfFeasible())
-                return;
-
-            if (CastShadowfuryIfFeasible())
+            if (DoSharedRotation())
                 return;
 
             if (DoMetamorphosis())
-                return;
-
-            if (HasGlobalCooldown())
                 return;
 
             // Always do Hand of Gul'dan id available and before tick ends

@@ -99,8 +99,14 @@ namespace Avoloos
             /// <summary>
             /// Should the bot use Terrorguard/Infernal
             /// </summary>
-            [JsonProperty("DPS: Use Terrorguard")]
+            [JsonProperty("DPS: Use Terrorguard/Infernal automatically")]
             public bool UseAdditionalDPSPet = true;
+
+            /// <summary>
+            /// Should the bot use dark Soul
+            /// </summary>
+            [JsonProperty("DPS: Use Dark Soul automatically")]
+            public bool UseDarkSoul = true;
 
             /// <summary>
             /// Should Shadofury be used to intterupt?
@@ -131,6 +137,9 @@ namespace Avoloos
             /// </summary>
             [JsonProperty("General: Disable OutOfCombat for FishBot")]
             public bool DisableOutOfCombatFishbot = true;
+
+            [JsonProperty("General: Automatic mana-management through Life Tap")]
+            public bool AutomaticManaManagement = true;
 
             /// <summary>
             /// The fear tracking list.
@@ -487,27 +496,29 @@ namespace Avoloos
             }
 
             /// <summary>
-            /// Do the stuff which got no GCD.
+            /// Do all the basic stuff which is shared among all specialisations.
             /// </summary>
             /// <returns><c>true</c>, if there was an GCD after a cast, <c>false</c> otherwise.</returns>
-            protected bool DoGlobalStuff()
+            protected bool DoSharedRotation()
             {
-                //no globalcd
-                CastSelfPreventDouble(
-                    "Dark Soul: Instability",
-                    () => Target.IsInCombatRangeAndLoS,
-                    20000
-                );
-                CastSelfPreventDouble(
-                    "Dark Soul: Knowledge",
-                    () => Target.IsInCombatRangeAndLoS,
-                    20000
-                );
-                CastSelfPreventDouble(
-                    "Dark Soul: Misery",
-                    () => Target.IsInCombatRangeAndLoS,
-                    20000
-                );
+                if (UseDarkSoul) {
+                    //no globalcd
+                    CastSelfPreventDouble(
+                        "Dark Soul: Instability",
+                        () => Target.IsInCombatRangeAndLoS && Target.MaxHealth > Me.MaxHealth && Target.IsElite(),
+                        20000
+                    );
+                    CastSelfPreventDouble(
+                        "Dark Soul: Knowledge",
+                        () => Target.IsInCombatRangeAndLoS && Target.MaxHealth > Me.MaxHealth && Target.IsElite(),
+                        20000
+                    );
+                    CastSelfPreventDouble(
+                        "Dark Soul: Misery",
+                        () => Target.IsInCombatRangeAndLoS && Target.MaxHealth > Me.MaxHealth && Target.IsElite(),
+                        20000
+                    );
+                }
 
                 Cast(
                     "Command Demon",
@@ -547,18 +558,12 @@ namespace Avoloos
                         Me.PetAttack(add);
                 }
                     
-                return HasGlobalCooldown();
-            }
 
-            /// <summary>
-            /// This function will keep your pet alive, do some CD DPS and heal yourself if needed and possible.
-            /// </summary>
-            /// <returns><c>true</c>, if a GCD spell as cast, <c>false</c> otherwise.</returns>
-            protected bool DoSomePetAndHealingStuff()
-            {
+
+
                 if (Cast("Mortal Coil", () => Me.HealthFraction <= 0.5))
                     return true;
-                    
+
                 if (SummonPet())
                     return true;
 
@@ -571,7 +576,7 @@ namespace Avoloos
                         () => UseAdditionalDPSPet && Me.HpLessThanOrElite(0.5)
                     ))
                     return true;
-               
+
                 if (CastSelf(
                         "Ember Tap",
                         () => Me.HealthFraction <= 0.35 && Me.GetPower(WoWPowerType.WarlockDestructionBurningEmbers) >= 1
@@ -581,13 +586,27 @@ namespace Avoloos
                 if (CastSelf(
                         "Health Funnel",
                         () => 
-                           Me.HasAlivePet
+                    Me.HasAlivePet
                         && Me.Pet.HealthFraction <= ( FunnelPetHp / 100 )
                         && Me.HealthFraction >= ( FunnelPlayerHp / 100 )
                     ))
                     return true;
+                    
+                if (CurrentBotName == "PvP" && CastFearIfFeasible())
+                    return true;
 
-                return false;
+                if (CastShadowfuryIfFeasible())
+                    return true;
+
+                // Mana management
+                if (HasSpell("Life Tap") && AutomaticManaManagement && CastSelfPreventDouble(
+                        "Life Tap",
+                        () => Me.HealthFraction >= 0.65 && Me.Mana <= Me.Health * 0.16,
+                        20
+                    ))
+                    return true;
+                    
+                return HasGlobalCooldown();
             }
         }
     }

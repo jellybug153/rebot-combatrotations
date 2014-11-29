@@ -121,6 +121,9 @@ namespace ReBot
             // MultiTarget Rotation
             if (Adds.Count > 0 && doMultitargetRotation(Adds.Count + 1))
                 return;
+	
+			if (burningEmbers > 0 && Me.HealthFraction < 0.35)
+				Cast("Ember Tap"); // instant
 
             // No Multitarget, so please disable Fire and Brimstone.
             CastSelf("Fire and Brimstone", () => Me.HasAura("Fire and Brimstone"));
@@ -165,15 +168,10 @@ namespace ReBot
             // Refresh Immolate is already done in P#2
 
             // Priority #6
-            // TODO: remember old cast position and check with target position and radius so we recast it when he gets out of the rain
-            if (CastSpellOnBestAoETarget("Rain of Fire", u => !HasAura("Rain of Fire")))
-                return;
-
-            // Priority #7
             if (Cast("Conflagrate", () => SpellCharges("Conflagrate") >= 1))
                 return;
 
-            // Priority #8
+            // Priority #7
             if (Cast("Incinerate"))
                 return;
         }

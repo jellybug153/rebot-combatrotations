@@ -55,6 +55,8 @@ namespace ReBot
         /// </summary>
         int MinMoltenStacksForSoulfire = 2;
 
+        bool UseSoulfireWhileMorphed = true;
+
         public AvoloosWarlockDemonologyIcyVeins()
         {
             GroupBuffs = new[] {
@@ -74,6 +76,7 @@ namespace ReBot
             bool doSoulFire = true;
             bool doHellfire = false;
             bool doImmolationAura = false;
+            bool doCataclysm = false;
 
             //bool doChaosWave = false; // TODO: Support it for easy groups of enemies.
             bool dotAllTargets = false;
@@ -87,8 +90,14 @@ namespace ReBot
                 MinMoltenStacksForSoulfire = 10;
             } else if (mobsInFrontOfMe >= 3) {
                 doImmolationAura = HasMetamorphosis;
+                doCataclysm = HasSpell("Cataclysm") && HasMetamorphosis && Target.IsElite();
             } else {
                 dotAllTargets = true;
+            }
+
+            if (doCataclysm) {
+                // Apply Doom to all adds through Cataclysm
+                CastSpellOnBestAoETarget("Cataclysm");
             }
 
             if (dotAllTargets) { // Do all the Adds dotting.
@@ -98,6 +107,7 @@ namespace ReBot
                             add => ( add.HpGreaterThanOrElite(0.15) && ( !add.HasAura("Doom") || add.AuraTimeRemaining("Doom") <= 18f ) )
                         ))
                         return true;
+ 
                 } else {
                     if (CastSpellOnAdds(
                             "Corruption",
@@ -176,6 +186,7 @@ namespace ReBot
 
         void ResetRotationVariables()
         {
+            UseSoulfireWhileMorphed = !HasSpell("Demonbolt");
             MinMoltenStacksForSoulfire = 5;
 
             if (SpellCharges("Hand of Gul'dan") >= 2) {
@@ -257,6 +268,13 @@ namespace ReBot
                 return;
 
             // Then we do the rest of our dots
+            if (Cast(
+                    "Cataclysm",
+                    () => ( HasMetamorphosis && !Target.HasAura("Doom", true) )
+                    || ( !HasMetamorphosis && !HasAura("Corruption", true) )
+                ))
+                return;
+
             if (CastVariant(
                     "Corruption",
                     "Doom",
@@ -267,26 +285,32 @@ namespace ReBot
                 ))
                 return;
 
-            if (Cast(
-                    "Soul Fire", 
-                    () => ( 
-                        Target.IsElite()
-                        && ( 
-                            ( Me.HasAura(
-                                "Molten Core", 
-                                true
-                            ) && Target.HealthFraction <= 0.25 )
-                            || Me.HasAura(
-                                "Molten Core",
-                                true,
-                                MinMoltenStacksForSoulfire
-                            )
-                        ) 
-                    )
-                    || ( !Target.IsElite() && Me.HasAura("Molten Core") )
-                ))
-                return;
-                
+            if (!UseSoulfireWhileMorphed) {
+                // If we don't use Soulfire while morphed we can use it as soon as we get a molten stack
+                // Because it seems we want to spend out demonic energy otherwise (e.g. Demonbolt)
+                if (Cast("Soul Fire", () => Me.HasAura("Molten Core")))
+                    return;
+            } else {
+                if (Cast(
+                        "Soul Fire", 
+                        () => ( 
+                            Target.IsElite()
+                            && ( 
+                                ( Me.HasAura(
+                                    "Molten Core", 
+                                    true
+                                ) && Target.HealthFraction <= 0.25 )
+                                || Me.HasAura(
+                                    "Molten Core",
+                                    true,
+                                    MinMoltenStacksForSoulfire
+                                )
+                            ) 
+                        )
+                        || ( !Target.IsElite() && Me.HasAura("Molten Core") )
+                    ))
+                    return;
+            }
             // Fallback cast variant
             if (CastVariant("Shadow Bolt", "Touch of Chaos"))
                 return;

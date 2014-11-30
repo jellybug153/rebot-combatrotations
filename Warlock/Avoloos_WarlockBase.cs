@@ -138,6 +138,9 @@ namespace Avoloos
             [JsonProperty("General: Disable OutOfCombat for FishBot")]
             public bool DisableOutOfCombatFishbot = true;
 
+            /// <summary>
+            /// Should the bot use Life Tap if the Health is high and the mana is low?
+            /// </summary>
             [JsonProperty("General: Automatic mana-management through Life Tap")]
             public bool AutomaticManaManagement = true;
 
@@ -156,6 +159,7 @@ namespace Avoloos
                 { "Shadowfury", 8 * 8 },
                 { "Immolate", 10 * 10 }, // Fire and Brimstone Version
                 { "Conflagrate", 10 * 10 }, // Fire and Brimstone Version
+                { "Cataclysm", 8 * 8 }
             };
 
             /// <summary>
@@ -256,6 +260,8 @@ namespace Avoloos
                         return true;
                     case "Rain of Fire":
                         return true;
+                    case "Cataclysm":
+                        return true;
                     case "Hand of Gul'dan":
                         return HasHandOfGuldanGlyph();
                     default:
@@ -326,7 +332,7 @@ namespace Avoloos
             protected bool CastShadowfuryIfFeasible()
             {
                 if (!UseShadowfuryAsInterrupt
-                    && Adds.Count >= 2
+                    && Adds.Count >= 3
                     && CastSpellOnBestAoETarget("Shadowfury"))
                     return true;
 
@@ -557,9 +563,6 @@ namespace Avoloos
                     if (add != null)
                         Me.PetAttack(add);
                 }
-                    
-
-
 
                 if (Cast("Mortal Coil", () => Me.HealthFraction <= 0.5))
                     return true;
@@ -567,15 +570,18 @@ namespace Avoloos
                 if (SummonPet())
                     return true;
 
-                if (CastOnTerrain(
-                        HasSpell("Grimoire of Supremacy") ? "Summon Abyssal" : "Summon Infernal",
-                        Target.Position,
-                        () => UseAdditionalDPSPet && ( Me.HpLessThanOrElite(0.5) || Adds.Count >= 3 )
-                    ) || Cast(
-                        HasSpell("Grimoire of Supremacy") ? "Summon Terrorguard" : "Summon Doomguard",
-                        () => UseAdditionalDPSPet && Me.HpLessThanOrElite(0.5)
-                    ))
-                    return true;
+                // Disable DPS Pets if they are the "normal" one.
+                if (!HasSpell("Demonic Servitude")) {
+                    if (CastOnTerrain(
+                            HasSpell("Grimoire of Supremacy") ? "Summon Abyssal" : "Summon Infernal",
+                            Target.Position,
+                            () => UseAdditionalDPSPet && ( ( ( Me.HealthFraction <= 0.75 || Target.HealthFraction <= 0.25 ) && Target.IsElite() ) || Adds.Count >= 3 ) && ( Target.MaxHealth >= Me.MaxHealth )
+                        ) || Cast(
+                            HasSpell("Grimoire of Supremacy") ? "Summon Terrorguard" : "Summon Doomguard",
+                            () => UseAdditionalDPSPet && ( Me.HealthFraction <= 0.5 || Target.HealthFraction <= 0.25 ) && Target.IsElite() && ( Target.MaxHealth >= Me.MaxHealth )
+                        ))
+                        return true;
+                }
 
                 if (CastSelf(
                         "Ember Tap",
@@ -601,7 +607,7 @@ namespace Avoloos
                 // Mana management
                 if (HasSpell("Life Tap") && AutomaticManaManagement && CastSelfPreventDouble(
                         "Life Tap",
-                        () => Me.HealthFraction >= 0.65 && Me.Mana <= Me.Health * 0.16,
+                        () => Me.HealthFraction >= 0.65 && Me.Mana <= Me.MaxHealth * 0.16,
                         20
                     ))
                     return true;

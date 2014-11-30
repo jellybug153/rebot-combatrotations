@@ -117,6 +117,11 @@ namespace ReBot
 
         bool DoDotting(UnitObject u)
         {
+            // Lets see what the community suggests we will use it on CD for now
+            if (HasSpell("Cataclysm")) {
+                if (Cast("Cataclysm", u))
+                    return true;
+            }
             if (Cast(
                     "Agony",
                     () => u.HpGreaterThanOrElite(0.3) && ( !u.HasAura("Agony") || u.AuraTimeRemaining("Agony") <= 7f ),

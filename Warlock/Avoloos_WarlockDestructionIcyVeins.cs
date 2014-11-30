@@ -50,7 +50,7 @@ namespace ReBot
                 CastSelf("Mannoroth's Fury", () => HasSpell("Mannoroth's Fury") && !Me.HasAura("Mannoroth's Fury"));
 
             // Priority #1
-            if (CastSpellOnBestAoETarget("Rain of Fire", u => !HasAura("Rain of Fire")))
+            if (CastSpellOnBestAoETarget("Rain of Fire", u => !HasAura("Rain of Fire") && HasAura("Mannoroth's Fury")))
                 return true;
 
             // Priority #2
@@ -81,6 +81,12 @@ namespace ReBot
                 if (Cast("Shadowburn", () => mobsInFrontOfMe < 12, shadowBurnTarget))
                     return true; 
                 if (Cast("Chaos Bolt", () => mobsInFrontOfMe < 6))
+                    return true;
+            }
+
+            if (mobsInFrontOfMe >= 3) {
+                // Apply Immolate to all adds through Cataclysm
+                if (CastSpellOnBestAoETarget("Cataclysm"))
                     return true;
             }
 
@@ -123,7 +129,7 @@ namespace ReBot
                            Target.HealthFraction <= 0.2
                     && (
                         Me.HasAura("Dark Soul: Instability")
-                        || burningEmbers == 4 // No cast time so 4 is good enough!
+                        || burningEmbers >= 3 // No cast time so 4 is good enough!
                     )
                         
                 ))
@@ -157,11 +163,17 @@ namespace ReBot
 
             // Priority #6
             // TODO: remember old cast position and check with target position and radius so we recast it when he gets out of the rain
-            if (CastSpellOnBestAoETarget("Rain of Fire", u => !HasAura("Rain of Fire")))
-                return;
+            //if (CastSpellOnBestAoETarget("Rain of Fire", u => !HasAura("Rain of Fire")))
+            //    return;
 
             // Priority #7
-            if (Cast("Conflagrate", () => SpellCharges("Conflagrate") >= 1))
+            if (Cast("Conflagrate", () => SpellCharges("Conflagrate") >= 2))
+                return;
+
+            if (CastSpellOnBestAoETarget("Cataclysm"))
+                return;
+                
+            if (Cast("Conflagrate", () => SpellCharges("Conflagrate") == 1))
                 return;
 
             // Priority #8

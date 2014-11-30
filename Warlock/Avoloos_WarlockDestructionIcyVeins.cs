@@ -50,7 +50,10 @@ namespace ReBot
                 CastSelf("Mannoroth's Fury", () => HasSpell("Mannoroth's Fury") && !Me.HasAura("Mannoroth's Fury"));
 
             // Priority #1
-            if (CastSpellOnBestAoETarget("Rain of Fire", u => !HasAura("Rain of Fire") && HasAura("Mannoroth's Fury")))
+            if (CastSpellOnBestAoETarget(
+                    "Rain of Fire",
+                    u => !HasAura("Rain of Fire") && ( HasAura("Mannoroth's Fury") || mobsInFrontOfMe >= 5 )
+                ))
                 return true;
 
             // Priority #2

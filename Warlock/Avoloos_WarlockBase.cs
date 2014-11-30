@@ -99,8 +99,14 @@ namespace Avoloos
             /// <summary>
             /// Should the bot use Terrorguard/Infernal
             /// </summary>
-            [JsonProperty("DPS: Use Terrorguard")]
+            [JsonProperty("DPS: Use Terrorguard/Infernal automatically")]
             public bool UseAdditionalDPSPet = true;
+
+            /// <summary>
+            /// Should the bot use dark Soul
+            /// </summary>
+            [JsonProperty("DPS: Use Dark Soul automatically")]
+            public bool UseDarkSoul = true;
 
             /// <summary>
             /// Should Shadofury be used to intterupt?
@@ -133,6 +139,12 @@ namespace Avoloos
             public bool DisableOutOfCombatFishbot = true;
 
             /// <summary>
+            /// Should the bot use Life Tap if the Health is high and the mana is low?
+            /// </summary>
+            [JsonProperty("General: Automatic mana-management through Life Tap")]
+            public bool AutomaticManaManagement = true;
+
+            /// <summary>
             /// The fear tracking list.
             /// </summary>
             protected List<ExpirableObject> FearTrackingList;
@@ -147,6 +159,7 @@ namespace Avoloos
                 { "Shadowfury", 8 * 8 },
                 { "Immolate", 10 * 10 }, // Fire and Brimstone Version
                 { "Conflagrate", 10 * 10 }, // Fire and Brimstone Version
+                { "Cataclysm", 8 * 8 }
             };
 
             /// <summary>
@@ -247,6 +260,8 @@ namespace Avoloos
                         return true;
                     case "Rain of Fire":
                         return true;
+                    case "Cataclysm":
+                        return true;
                     case "Hand of Gul'dan":
                         return HasHandOfGuldanGlyph();
                     default:
@@ -317,7 +332,7 @@ namespace Avoloos
             protected bool CastShadowfuryIfFeasible()
             {
                 if (!UseShadowfuryAsInterrupt
-                    && Adds.Count >= 2
+                    && Adds.Count >= 3
                     && CastSpellOnBestAoETarget("Shadowfury"))
                     return true;
 
@@ -490,27 +505,29 @@ namespace Avoloos
             }
 
             /// <summary>
-            /// Do the stuff which got no GCD.
+            /// Do all the basic stuff which is shared among all specialisations.
             /// </summary>
             /// <returns><c>true</c>, if there was an GCD after a cast, <c>false</c> otherwise.</returns>
-            protected bool DoGlobalStuff()
+            protected bool DoSharedRotation()
             {
-                //no globalcd
-                CastSelfPreventDouble(
-                    "Dark Soul: Instability",
-                    () => Target.IsInCombatRangeAndLoS,
-                    20000
-                );
-                CastSelfPreventDouble(
-                    "Dark Soul: Knowledge",
-                    () => Target.IsInCombatRangeAndLoS,
-                    20000
-                );
-                CastSelfPreventDouble(
-                    "Dark Soul: Misery",
-                    () => Target.IsInCombatRangeAndLoS,
-                    20000
-                );
+                if (UseDarkSoul) {
+                    //no globalcd
+                    CastSelfPreventDouble(
+                        "Dark Soul: Instability",
+                        () => Target.IsInCombatRangeAndLoS && Target.MaxHealth > Me.MaxHealth && Target.IsElite(),
+                        20000
+                    );
+                    CastSelfPreventDouble(
+                        "Dark Soul: Knowledge",
+                        () => Target.IsInCombatRangeAndLoS && Target.MaxHealth > Me.MaxHealth && Target.IsElite(),
+                        20000
+                    );
+                    CastSelfPreventDouble(
+                        "Dark Soul: Misery",
+                        () => Target.IsInCombatRangeAndLoS && Target.MaxHealth > Me.MaxHealth && Target.IsElite(),
+                        20000
+                    );
+                }
 
                 Cast(
                     "Command Demon",
@@ -549,19 +566,10 @@ namespace Avoloos
                     if (add != null)
                         Me.PetAttack(add);
                 }
-                    
-                return HasGlobalCooldown();
-            }
 
-            /// <summary>
-            /// This function will keep your pet alive, do some CD DPS and heal yourself if needed and possible.
-            /// </summary>
-            /// <returns><c>true</c>, if a GCD spell as cast, <c>false</c> otherwise.</returns>
-            protected bool DoSomePetAndHealingStuff()
-            {
                 if (Cast("Mortal Coil", () => Me.HealthFraction <= 0.5))
                     return true;
-                    
+
                 if (SummonPet())
                     return true;
 	
@@ -570,16 +578,19 @@ namespace Avoloos
 						return true;
 				}
 
-                if (CastOnTerrain(
-                        HasSpell("Grimoire of Supremacy") ? "Summon Abyssal" : "Summon Infernal",
-                        Target.Position,
-                        () => UseAdditionalDPSPet && ( Me.HpLessThanOrElite(0.5) || Adds.Count >= 3 )
-                    ) || Cast(
-                        HasSpell("Grimoire of Supremacy") ? "Summon Terrorguard" : "Summon Doomguard",
-                        () => UseAdditionalDPSPet && Me.HpLessThanOrElite(0.5)
-                    ))
-                    return true;
-               
+                // Disable DPS Pets if they are the "normal" one.
+                if (!HasSpell("Demonic Servitude")) {
+                    if (CastOnTerrain(
+                            HasSpell("Grimoire of Supremacy") ? "Summon Abyssal" : "Summon Infernal",
+                            Target.Position,
+                            () => UseAdditionalDPSPet && ( ( ( Me.HealthFraction <= 0.75 || Target.HealthFraction <= 0.25 ) && Target.IsElite() ) || Adds.Count >= 3 ) && ( Target.MaxHealth >= Me.MaxHealth )
+                        ) || Cast(
+                            HasSpell("Grimoire of Supremacy") ? "Summon Terrorguard" : "Summon Doomguard",
+                            () => UseAdditionalDPSPet && ( Me.HealthFraction <= 0.5 || Target.HealthFraction <= 0.25 ) && Target.IsElite() && ( Target.MaxHealth >= Me.MaxHealth )
+                        ))
+                        return true;
+                }
+
                 if (CastSelf(
                         "Ember Tap",
                         () => Me.HealthFraction <= 0.35 && Me.GetPower(WoWPowerType.WarlockDestructionBurningEmbers) >= 1
@@ -589,13 +600,27 @@ namespace Avoloos
                 if (CastSelf(
                         "Health Funnel",
                         () => 
-                           Me.HasAlivePet
+                    Me.HasAlivePet
                         && Me.Pet.HealthFraction <= ( FunnelPetHp / 100 )
                         && Me.HealthFraction >= ( FunnelPlayerHp / 100 )
                     ))
                     return true;
+                    
+                if (CurrentBotName == "PvP" && CastFearIfFeasible())
+                    return true;
 
-                return false;
+                if (CastShadowfuryIfFeasible())
+                    return true;
+
+                // Mana management
+                if (HasSpell("Life Tap") && AutomaticManaManagement && CastSelfPreventDouble(
+                        "Life Tap",
+                        () => Me.HealthFraction >= 0.65 && Me.Mana <= Me.MaxHealth * 0.16,
+                        20
+                    ))
+                    return true;
+                    
+                return HasGlobalCooldown();
             }
         }
     }

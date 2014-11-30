@@ -50,11 +50,12 @@ namespace ReBot
                 CastSelf("Mannoroth's Fury", () => HasSpell("Mannoroth's Fury") && !Me.HasAura("Mannoroth's Fury"));
 
             // Priority #1
-			if (mobsInFrontOfMe > 1) {
-				if (CastSpellOnBestAoETarget("Rain of Fire", u => !HasAura("Rain of Fire")))
-					return true;
-			}
-	
+            if (CastSpellOnBestAoETarget(
+                    "Rain of Fire",
+                    u => !HasAura("Rain of Fire") && ( HasAura("Mannoroth's Fury") || mobsInFrontOfMe >= 5 )
+                ))
+                return true;
+
             // Priority #2
             if (
                 SpellCooldown("Havoc") <= 0.01 && burningEmbers >= 1 && mobsInFrontOfMe < 12) {
@@ -86,6 +87,12 @@ namespace ReBot
                     return true;
             }
 
+            if (mobsInFrontOfMe >= 3) {
+                // Apply Immolate to all adds through Cataclysm
+                if (CastSpellOnBestAoETarget("Cataclysm"))
+                    return true;
+            }
+
             // Priority #3
             var countAddsInRange = Adds.Count(x => x.DistanceSquaredTo(Target) <= SpellAoERange("Conflagrate"));
             if (( burningEmbers >= 2 && countAddsInRange > 2 )
@@ -106,14 +113,7 @@ namespace ReBot
 
         public override void Combat()
         {
-            // Standard foo
-            if (DoGlobalStuff())
-                return;
-            if (DoSomePetAndHealingStuff())
-                return;
-            if (CurrentBotName == "PvP" && CastFearIfFeasible())
-                return;
-            if (CastShadowfuryIfFeasible())
+            if (DoSharedRotation())
                 return;
 
             int burningEmbers = Me.GetPower(WoWPowerType.WarlockDestructionBurningEmbers);
@@ -135,7 +135,7 @@ namespace ReBot
                            Target.HealthFraction <= 0.2
                     && (
                         Me.HasAura("Dark Soul: Instability")
-                        || burningEmbers == 4 // No cast time so 4 is good enough!
+                        || burningEmbers >= 3 // No cast time so 4 is good enough!
                     )
                         
                 ))
@@ -168,7 +168,18 @@ namespace ReBot
             // Refresh Immolate is already done in P#2
 
             // Priority #6
-            if (Cast("Conflagrate", () => SpellCharges("Conflagrate") >= 1))
+            // TODO: remember old cast position and check with target position and radius so we recast it when he gets out of the rain
+            //if (CastSpellOnBestAoETarget("Rain of Fire", u => !HasAura("Rain of Fire")))
+            //    return;
+
+            // Priority #7
+            if (Cast("Conflagrate", () => SpellCharges("Conflagrate") >= 2))
+                return;
+
+            if (CastSpellOnBestAoETarget("Cataclysm"))
+                return;
+                
+            if (Cast("Conflagrate", () => SpellCharges("Conflagrate") == 1))
                 return;
 
             // Priority #7

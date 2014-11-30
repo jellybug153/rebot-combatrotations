@@ -14,9 +14,6 @@ namespace ReBot
     )]
     public class AvoloosWarlockAfflictionIcyVeins : WarlockBaseRotation
     {
-        [JsonProperty("Automatic mana-management through Life Tap")]
-        public bool AutomaticManaManagement = true;
-
         public AvoloosWarlockAfflictionIcyVeins()
         {
             GroupBuffs = new[] {
@@ -78,24 +75,7 @@ namespace ReBot
 
         public override void Combat()
         {
-            if (DoGlobalStuff())
-                return;
-            if (DoSomePetAndHealingStuff())
-                return;
-
-            if (CastShadowfuryIfFeasible())
-                return;
-
-            // Mana management
-            if (AutomaticManaManagement && CastSelfPreventDouble(
-                    "Life Tap",
-                    () => Me.HealthFraction >= 0.65 && Me.Mana <= Me.Health * 0.16,
-                    20
-                ))
-                return;
-
-            //if (CurrentBotName == "PvP" && Cast("Drain Life", () => Me.HealthFraction <= 0.45 && Me.HasAura("Soulburn"))) return;
-            if (CurrentBotName == "PvP" && CastFearIfFeasible())
+            if (DoSharedRotation())
                 return;
 
             //Adds
@@ -137,6 +117,11 @@ namespace ReBot
 
         bool DoDotting(UnitObject u)
         {
+            // Lets see what the community suggests we will use it on CD for now
+            if (HasSpell("Cataclysm")) {
+                if (Cast("Cataclysm", u))
+                    return true;
+            }
             if (Cast(
                     "Agony",
                     () => u.HpGreaterThanOrElite(0.3) && ( !u.HasAura("Agony") || u.AuraTimeRemaining("Agony") <= 7f ),

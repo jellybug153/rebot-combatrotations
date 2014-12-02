@@ -68,6 +68,14 @@ namespace Avoloos
     namespace Warlock
     {
         /// <summary>
+        /// Warlock spell Ids
+        /// </summary>
+        enum WarlockSpellIds
+        {
+            CATACLYSM = 152108
+        }
+
+        /// <summary>
         /// Basic class which implements some convinience functions.
         /// </summary>
         abstract public class WarlockBaseRotation : CombatRotation

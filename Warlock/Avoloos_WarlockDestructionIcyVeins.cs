@@ -113,6 +113,9 @@ namespace ReBot
 
         public override void Combat()
         {
+            if (Me.IsCasting && Me.CastingSpellID == 152108)
+                return;
+
             if (DoSharedRotation())
                 return;
 

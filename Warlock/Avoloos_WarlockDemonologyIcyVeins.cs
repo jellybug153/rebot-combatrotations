@@ -244,6 +244,9 @@ namespace ReBot
 
         public override void Combat()
         {
+            if (Me.IsCasting && Me.CastingSpellID == (int) WarlockSpellIds.CATACLYSM)
+                return;
+
             // reset some demonology vars (like hand of gul'dan lock)
             ResetRotationVariables();
 

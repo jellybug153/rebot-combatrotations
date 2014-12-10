@@ -64,8 +64,8 @@ namespace ReBot
 
                 if (!UseHavocOnFocus)
                     havocAdd = Adds
-                                .OrderByDescending(x => x.Health)
-                                .FirstOrDefault(x => x.HealthFraction <= 0.4f && x.IsInLoS && x.DistanceSquared <= SpellMaxRangeSq("Havoc")) ?? Adds.FirstOrDefault();
+                        .OrderByDescending(x => x.Health)
+                        .FirstOrDefault(x => x.HealthFraction <= HavocHealthPercentage / 100 && x.IsInLoS && x.DistanceSquared <= SpellMaxRangeSq("Havoc")) ?? Adds.FirstOrDefault();
 
                 if (havocAdd != null && havocAdd.IsFriendly)
                     havocAdd = havocAdd.Target;

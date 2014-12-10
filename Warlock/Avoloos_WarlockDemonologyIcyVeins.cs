@@ -2,7 +2,6 @@ using System;
 using ReBot.API;
 using Avoloos.Warlock;
 using ReBot.Helpers;
-using System.Security.Cryptography.X509Certificates;
 using Geometry;
 using System.Linq;
 using Newtonsoft.Json;

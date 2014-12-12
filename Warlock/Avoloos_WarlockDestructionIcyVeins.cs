@@ -77,7 +77,7 @@ namespace ReBot
             // cast Chaosbolt or shadowburn on target as soon as possible and if feasible
             if (Adds.Count(x => x.HasAura("Havoc", true)) > 0 || burningEmbers >= 4) {
                 var shadowBurnTarget = Adds
-                    .Where(x => x.HealthFraction <= 0.249 && !x.HasAura("Havoc") && x.IsInLoS && x.DistanceSquared <= SpellMaxRangeSq("Shadow Burn"))
+                    .Where(x => x.HealthFraction <= 0.249 && !x.HasAura("Havoc") && x.IsInLoS && x.DistanceSquared <= SpellMaxRangeSq("Shadowburn"))
                     .OrderByDescending(x => x.MaxHealth)
                     .FirstOrDefault() ?? Target;
                     
@@ -138,7 +138,7 @@ namespace ReBot
                            Target.HealthFraction <= 0.2
                     && (
                         Me.HasAura("Dark Soul: Instability")
-                        || burningEmbers >= 3 // No cast time so 4 is good enough!
+                        || burningEmbers >= 1 // No cast time so 4 is good enough!
                     )
                         
                 ))

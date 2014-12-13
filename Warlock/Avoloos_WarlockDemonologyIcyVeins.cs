@@ -269,10 +269,12 @@ namespace ReBot
                 return;
 
             // Then we do the rest of our dots
-            if (Cast(
+            if (CastSpellOnBestAoETarget(
                     "Cataclysm",
-                    () => ( HasMetamorphosis && !Target.HasAura("Doom", true) )
-                    || ( !HasMetamorphosis && !HasAura("Corruption", true) )
+                    (u) => ( HasMetamorphosis && !u.HasAura("Doom", true) )
+                    || ( !HasMetamorphosis && !u.HasAura("Corruption", true) ),
+                    (u) => ( HasMetamorphosis && !u.HasAura("Doom", true) )
+                    || ( !HasMetamorphosis && !u.HasAura("Corruption", true) )
                 ))
                 return;
 

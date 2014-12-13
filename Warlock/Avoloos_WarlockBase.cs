@@ -42,130 +42,6 @@ namespace Avoloos
         ImpDoomguard = 22809,
     }
 
-
-    // This extension class helps to prevent duplicate code in the routines
-    public static class WarlockHelper
-    {
-        /// <summary>
-        /// Summon the warlock pet, if we have no alive pet or if current pet is not the pet we want
-        /// </summary>
-        public static bool SummonPet(this CombatRotation rota, WarlockPet pet)
-        {
-            bool hasBetterPets = rota.HasSpell("Grimoire of Supremacy");
-
-            // let rebot choose the best pet
-            if (pet == WarlockPet.AutoSelect) {
-                if (rota.HasSpell("Demonic Servitude"))
-                    pet = WarlockPet.Infernal;
-                else if (rota.HasSpell("Summon Felguard"))
-                    pet = WarlockPet.Felguard;
-                else if (rota.CurrentBotName == "PvP" && rota.HasSpell("Summon Felhunter"))
-                    pet = WarlockPet.Felhunter;
-                else if (rota.Me.Level < rota.Me.MaxLevel && rota.HasSpell("Summon Voidwalker"))
-                    pet = WarlockPet.Voidwalker;
-                else if (hasBetterPets && rota.HasSpell("Summon Felhunter"))
-                    pet = WarlockPet.Felhunter;
-                else if (rota.HasSpell("Summon Voidwalker"))
-                    pet = WarlockPet.Voidwalker;
-                else if (rota.HasSpell("Summon Imp"))
-                    pet = WarlockPet.SoulImp;
-                else
-                    return false; // we can not summon a pet 
-            }
-
-
-            string spell = null;
-            int displayId = 0;
-
-            switch (pet) {
-                case WarlockPet.Felhunter:
-                    displayId = hasBetterPets ? (int) WlPetDisplayId.ImpFelhunter : (int) WlPetDisplayId.Felhunter;
-                    spell = "Summon Felhunter";
-                    break;
-
-                case WarlockPet.Voidwalker:
-                    displayId = hasBetterPets ? (int) WlPetDisplayId.ImpVoidwalker : (int) WlPetDisplayId.Voidwalker;
-                    spell = "Summon Voidwalker";
-                    break;
-
-                case WarlockPet.Felguard:
-                    displayId = hasBetterPets ? (int) WlPetDisplayId.ImpFelguard : (int) WlPetDisplayId.Felguard;
-                    spell = "Summon Felguard";
-                    break;
-
-                case WarlockPet.SoulImp:
-                    displayId = hasBetterPets ? (int) WlPetDisplayId.ImpSoulImp : (int) WlPetDisplayId.SoulImp;
-                    spell = "Summon Imp";
-                    break;
-
-                case WarlockPet.Succubus:
-                    displayId = hasBetterPets ? (int) WlPetDisplayId.ImpSuccubus : (int) WlPetDisplayId.Succubus;
-                    spell = "Summon Succubus";
-                    break;
-
-                case WarlockPet.Infernal:
-                    displayId = hasBetterPets ? (int) WlPetDisplayId.ImpInfernal : (int) WlPetDisplayId.Infernal;
-                    spell = "Summon Infernal";
-                    break;
-
-                case WarlockPet.Doomguard:
-                    displayId = hasBetterPets ? (int) WlPetDisplayId.ImpDoomguard : (int) WlPetDisplayId.Doomguard;
-                    spell = "Summon Doomguard";
-                    break;
-
-            }
-
-            if (spell != null)
-                return rota.CastSelfPreventDouble(
-                    spell,
-                    () => !rota.Me.HasAlivePet || rota.Me.Pet != null && rota.Me.Pet.DisplayId != displayId
-                );
-
-            return false;
-        }
-
-        /// <summary>
-        /// True if current pet is this pet
-        /// </summary>
-        public static bool IsPetActive(this CombatRotation rota, string spellname)
-        {
-            if (rota.Me.Pet == null)
-                return false;
-
-            spellname = spellname.ToLowerInvariant();
-            switch ((WlPetDisplayId) rota.Me.Pet.DisplayId) {
-                case WlPetDisplayId.Felhunter:
-                case WlPetDisplayId.ImpFelhunter:
-                    return "summon felhunter".Contains(spellname);
-
-                case WlPetDisplayId.Voidwalker:
-                case WlPetDisplayId.ImpVoidwalker:
-                    return "summon voidwalker".Contains(spellname);
-
-                case WlPetDisplayId.Felguard:
-                case WlPetDisplayId.ImpFelguard:
-                    return "summon felguard".Contains(spellname);
-
-                case WlPetDisplayId.SoulImp:
-                case WlPetDisplayId.ImpSoulImp:
-                    return "summon imp".Contains(spellname);
-
-                case WlPetDisplayId.Succubus:
-                case WlPetDisplayId.ImpSuccubus:
-                    return "summon succubus".Contains(spellname);
-
-                case WlPetDisplayId.Infernal:
-                case WlPetDisplayId.ImpInfernal:
-                    return "summon infernal".Contains(spellname);
-
-                case WlPetDisplayId.Doomguard:
-                case WlPetDisplayId.ImpDoomguard:
-                    return "summon doomguard".Contains(spellname);
-            }
-            return false;
-        }
-    }
-
     /// <summary>
     /// This class represents an Object, which can expire.
     /// </summary>
@@ -365,6 +241,125 @@ namespace Avoloos
             {
                 FearTrackingList = new List<ExpirableObject>();
                 Info("Warlock Combat Rotation - Version 1.0 by Avoloos.");
+            }
+
+            /// <summary>
+            /// Summon the warlock pet, if we have no alive pet or if current pet is not the pet we want
+            /// </summary>
+            public bool SummonPet(WarlockPet pet)
+            {
+                bool hasBetterPets = HasSpell("Grimoire of Supremacy");
+
+                // let rebot choose the best pet
+                if (pet == WarlockPet.AutoSelect) {
+                    if (HasSpell("Demonic Servitude"))
+                        pet = WarlockPet.Infernal;
+                    else if (HasSpell("Summon Felguard"))
+                        pet = WarlockPet.Felguard;
+                    else if (CurrentBotName == "PvP" && HasSpell("Summon Felhunter"))
+                        pet = WarlockPet.Felhunter;
+                    else if (Me.Level < Me.MaxLevel && HasSpell("Summon Voidwalker"))
+                        pet = WarlockPet.Voidwalker;
+                    else if (hasBetterPets && HasSpell("Summon Felhunter"))
+                        pet = WarlockPet.Felhunter;
+                    else if (HasSpell("Summon Voidwalker"))
+                        pet = WarlockPet.Voidwalker;
+                    else if (HasSpell("Summon Imp"))
+                        pet = WarlockPet.SoulImp;
+                    else
+                        return false; // we can not summon a pet 
+                }
+
+
+                string spell = null;
+                int displayId = 0;
+
+                switch (pet) {
+                    case WarlockPet.Felhunter:
+                        displayId = hasBetterPets ? (int) WlPetDisplayId.ImpFelhunter : (int) WlPetDisplayId.Felhunter;
+                        spell = "Summon Felhunter";
+                        break;
+
+                    case WarlockPet.Voidwalker:
+                        displayId = hasBetterPets ? (int) WlPetDisplayId.ImpVoidwalker : (int) WlPetDisplayId.Voidwalker;
+                        spell = "Summon Voidwalker";
+                        break;
+
+                    case WarlockPet.Felguard:
+                        displayId = hasBetterPets ? (int) WlPetDisplayId.ImpFelguard : (int) WlPetDisplayId.Felguard;
+                        spell = "Summon Felguard";
+                        break;
+
+                    case WarlockPet.SoulImp:
+                        displayId = hasBetterPets ? (int) WlPetDisplayId.ImpSoulImp : (int) WlPetDisplayId.SoulImp;
+                        spell = "Summon Imp";
+                        break;
+
+                    case WarlockPet.Succubus:
+                        displayId = hasBetterPets ? (int) WlPetDisplayId.ImpSuccubus : (int) WlPetDisplayId.Succubus;
+                        spell = "Summon Succubus";
+                        break;
+
+                    case WarlockPet.Infernal:
+                        displayId = hasBetterPets ? (int) WlPetDisplayId.ImpInfernal : (int) WlPetDisplayId.Infernal;
+                        spell = "Summon Infernal";
+                        break;
+
+                    case WarlockPet.Doomguard:
+                        displayId = hasBetterPets ? (int) WlPetDisplayId.ImpDoomguard : (int) WlPetDisplayId.Doomguard;
+                        spell = "Summon Doomguard";
+                        break;
+
+                }
+
+                if (spell != null)
+                    return CastSelfPreventDouble(
+                        spell,
+                        () => !Me.HasAlivePet || Me.Pet != null && Me.Pet.DisplayId != displayId
+                    );
+
+                return false;
+            }
+
+            /// <summary>
+            /// True if current pet is this pet
+            /// </summary>
+            public bool IsPetActive(string spellname)
+            {
+                if (Me.Pet == null)
+                    return false;
+
+                spellname = spellname.ToLowerInvariant();
+                switch ((WlPetDisplayId) Me.Pet.DisplayId) {
+                    case WlPetDisplayId.Felhunter:
+                    case WlPetDisplayId.ImpFelhunter:
+                        return "summon felhunter".Contains(spellname);
+
+                    case WlPetDisplayId.Voidwalker:
+                    case WlPetDisplayId.ImpVoidwalker:
+                        return "summon voidwalker".Contains(spellname);
+
+                    case WlPetDisplayId.Felguard:
+                    case WlPetDisplayId.ImpFelguard:
+                        return "summon felguard".Contains(spellname);
+
+                    case WlPetDisplayId.SoulImp:
+                    case WlPetDisplayId.ImpSoulImp:
+                        return "summon imp".Contains(spellname);
+
+                    case WlPetDisplayId.Succubus:
+                    case WlPetDisplayId.ImpSuccubus:
+                        return "summon succubus".Contains(spellname);
+
+                    case WlPetDisplayId.Infernal:
+                    case WlPetDisplayId.ImpInfernal:
+                        return "summon infernal".Contains(spellname);
+
+                    case WlPetDisplayId.Doomguard:
+                    case WlPetDisplayId.ImpDoomguard:
+                        return "summon doomguard".Contains(spellname);
+                }
+                return false;
             }
 
             /// <summary>
@@ -671,7 +666,7 @@ namespace Avoloos
                             && Me.GetPower(WoWPowerType.WarlockSoulShards) >= 1
                             && !HasAura("Soulburn")
                         );
-                        if (this.SummonPet(SelectedPet))
+                        if (SummonPet(SelectedPet))
                             return true;
                         if (CastSelf("Grimoire of Sacrifice", () => Me.HasAlivePet))
                             return true;
@@ -686,7 +681,7 @@ namespace Avoloos
                         "Soulburn",
                         () => !Me.HasAlivePet && Me.GetPower(WoWPowerType.WarlockSoulShards) >= 1
                     );
-                    if (this.SummonPet(SelectedPet))
+                    if (SummonPet(SelectedPet))
                         return true;
                 } else if (Me.HasAlivePet) {
                     Me.PetDismiss();
@@ -749,15 +744,15 @@ namespace Avoloos
 
                 Cast(
                     "Command Demon",
-                    () => !HasSpell("Grimoire of Sacrifice") && ( this.IsPetActive("Summon Felhunter") || SelectedPet == WarlockPet.Felhunter ) && Target.IsCastingAndInterruptible()
+                    () => !HasSpell("Grimoire of Sacrifice") && ( IsPetActive("Summon Felhunter") || SelectedPet == WarlockPet.Felhunter ) && Target.IsCastingAndInterruptible()
                 );
                 Cast(
                     "Command Demon",
-                    () => !HasSpell("Grimoire of Sacrifice") && ( this.IsPetActive("Summon Imp") || SelectedPet == WarlockPet.SoulImp ) && Me.HealthFraction <= 0.75
+                    () => !HasSpell("Grimoire of Sacrifice") && ( IsPetActive("Summon Imp") || SelectedPet == WarlockPet.SoulImp ) && Me.HealthFraction <= 0.75
                 );
                 Cast(
                     "Command Demon",
-                    () => !HasSpell("Grimoire of Sacrifice") && ( this.IsPetActive("Summon Voidwalker") || SelectedPet == WarlockPet.Voidwalker ) && Me.HealthFraction < 0.5
+                    () => !HasSpell("Grimoire of Sacrifice") && ( IsPetActive("Summon Voidwalker") || SelectedPet == WarlockPet.Voidwalker ) && Me.HealthFraction < 0.5
                 );
                 Cast(
                     "Command Demon",

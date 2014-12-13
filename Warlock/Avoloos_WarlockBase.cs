@@ -5,7 +5,6 @@ using ReBot.API;
 using System;
 using System.Collections.Generic;
 using Geometry;
-using System.Runtime.InteropServices;
 
 namespace Avoloos
 {
@@ -381,10 +380,10 @@ namespace Avoloos
             public bool CastSpellOnBestAoETarget(string spellName, Func<UnitObject, bool> castWhen = null, Func<UnitObject, bool> bestTargetCondition = null, int preventTime = 0, UnitObject targetOverride = null)
             {
                 if (castWhen == null)
-                    castWhen = (_) => true;
+                    castWhen = ( _ => true );
 
                 if (bestTargetCondition == null)
-                    bestTargetCondition = (_) => true;
+                    bestTargetCondition = ( _ => true );
 
                 var aoeRange = SpellAoERange(spellName);
                 var bestTarget = targetOverride ?? Adds
@@ -551,8 +550,8 @@ namespace Avoloos
 
                 if (UseShadowfuryAsInterrupt && CastSpellOnBestAoETarget(
                         "Shadowfury", 
-                        (u) => u.IsCastingAndInterruptible(), 
-                        (u) => u.IsCastingAndInterruptible()
+                        u => u.IsCastingAndInterruptible(), 
+                        u => u.IsCastingAndInterruptible()
                     ))
                     return true;
 
@@ -565,9 +564,7 @@ namespace Avoloos
             /// <returns><c>true</c> if the current pet is a Felguard; otherwise, <c>false</c>.</returns>
             protected bool HasFelguard()
             {
-                if (!Me.HasAlivePet)
-                    return false;
-                return ( WlPetDisplayId.Felguard.Equals(Me.Pet.DisplayId) || WlPetDisplayId.ImpFelguard.Equals(Me.Pet.DisplayId) );
+                return Me.HasAlivePet && ( WlPetDisplayId.Felguard.Equals(Me.Pet.DisplayId) || WlPetDisplayId.ImpFelguard.Equals(Me.Pet.DisplayId) );
             }
 
             /// <summary>
@@ -816,10 +813,7 @@ namespace Avoloos
                         if (GrimoriePet == WarlockGrimoriePet.CurrentMainPet) {
                             switch (SelectedPet) {
                                 case WarlockPet.AutoSelect:
-                                    if (Target.IsCastingAndInterruptible())
-                                        GrimoriePet = WarlockGrimoriePet.Felhunter;
-                                    else
-                                        GrimoriePet = WarlockGrimoriePet.Doomguard;
+                                    GrimoriePet = Target.IsCastingAndInterruptible() ? WarlockGrimoriePet.Felhunter : WarlockGrimoriePet.Doomguard;
                                     break;
                                 case WarlockPet.SoulImp:
                                     GrimoriePet = WarlockGrimoriePet.SoulImp;
@@ -877,10 +871,11 @@ namespace Avoloos
                     ))
                     return true;
 
-                if (CastSelf(
+                if (Cast(
                         "Health Funnel",
+                        Me.Pet,
                         () => 
-                    Me.HasAlivePet
+                        Me.HasAlivePet
                         && Me.Pet.HealthFraction <= ( FunnelPetHp / 100 )
                         && Me.HealthFraction >= ( FunnelPlayerHp / 100 )
                     ))
@@ -896,7 +891,7 @@ namespace Avoloos
                 if (HasSpell("Life Tap") && AutomaticManaManagement && CastSelfPreventDouble(
                         "Life Tap",
                         () => Me.HealthFraction >= 0.65 && Me.Mana <= Me.MaxHealth * 0.16,
-                        20
+                        2000
                     ))
                     return true;
                     

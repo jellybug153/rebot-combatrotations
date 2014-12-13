@@ -3,7 +3,6 @@ using ReBot.API;
 using System;
 using Avoloos.Warlock;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 
 namespace ReBot
 {

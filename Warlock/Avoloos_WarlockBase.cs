@@ -70,7 +70,7 @@ namespace Avoloos
         /// <summary>
         /// Warlock spell Ids
         /// </summary>
-        enum WarlockSpellIds
+        public enum WarlockSpellIds
         {
             CATACLYSM = 152108
         }

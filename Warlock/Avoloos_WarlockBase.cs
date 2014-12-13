@@ -153,6 +153,18 @@ namespace Avoloos
             public bool AutomaticManaManagement = true;
 
             /// <summary>
+            /// Defines the factor of HP a unit has to have to be counted as a boss.
+            /// </summary>
+            [JsonProperty("General/DPS: Percentual factor of a Targets MaxHP in relation to Players MaxHP to be valued as Bossencounter")]
+            public int BossHealthPercentage = 200;
+
+            /// <summary>
+            /// Defines the +Level a Unit should have to be counted as a boss.
+            /// </summary>
+            [JsonProperty("General/DPS: +Level a Target has to have to be valued as Boss encounter")]
+            public int BossLevelIncrease = 5;
+
+            /// <summary>
             /// The fear tracking list.
             /// </summary>
             protected List<ExpirableObject> FearTrackingList;
@@ -510,6 +522,16 @@ namespace Avoloos
             }
 
             /// <summary>
+            /// Checks if the given unit may be a boss unit.
+            /// </summary>
+            /// <returns><c>true</c>, if unit is (maybe) a boss, <c>false</c> otherwise.</returns>
+            /// <param name="o">The Unit we want to check</param>
+            public bool IsBoss(UnitObject o)
+            {
+                return ( o.IsElite() && o.MaxHealth * ( BossHealthPercentage / 100 ) >= Me.MaxHealth ) || o.Level >= Me.Level + BossLevelIncrease;
+            }
+
+            /// <summary>
             /// Do all the basic stuff which is shared among all specialisations.
             /// </summary>
             /// <returns><c>true</c>, if there was an GCD after a cast, <c>false</c> otherwise.</returns>
@@ -517,19 +539,20 @@ namespace Avoloos
             {
                 if (UseDarkSoul) {
                     //no globalcd
+                    bool DarkSoulCondition = ( Target.IsInCombatRangeAndLoS && Target.MaxHealth >= Me.MaxHealth && Target.IsElite() ) || IsBoss(Target);
                     CastSelfPreventDouble(
                         "Dark Soul: Instability",
-                        () => Target.IsInCombatRangeAndLoS && Target.MaxHealth > Me.MaxHealth && Target.IsElite(),
+                        () => DarkSoulCondition,
                         20000
                     );
                     CastSelfPreventDouble(
                         "Dark Soul: Knowledge",
-                        () => Target.IsInCombatRangeAndLoS && Target.MaxHealth > Me.MaxHealth && Target.IsElite(),
+                        () => DarkSoulCondition,
                         20000
                     );
                     CastSelfPreventDouble(
                         "Dark Soul: Misery",
-                        () => Target.IsInCombatRangeAndLoS && Target.MaxHealth > Me.MaxHealth && Target.IsElite(),
+                        () => DarkSoulCondition,
                         20000
                     );
                 }
@@ -583,10 +606,10 @@ namespace Avoloos
                     if (CastOnTerrain(
                             HasSpell("Grimoire of Supremacy") ? "Summon Abyssal" : "Summon Infernal",
                             Target.Position,
-                            () => UseAdditionalDPSPet && ( ( ( Me.HealthFraction <= 0.75 || Target.HealthFraction <= 0.25 ) && Target.IsElite() ) || Adds.Count >= 3 ) && ( Target.MaxHealth >= Me.MaxHealth )
+                            () => UseAdditionalDPSPet && ( ( ( Me.HealthFraction <= 0.75 || Target.HealthFraction <= 0.25 ) ) || Adds.Count >= 3 ) && IsBoss(Target)
                         ) || Cast(
                             HasSpell("Grimoire of Supremacy") ? "Summon Terrorguard" : "Summon Doomguard",
-                            () => UseAdditionalDPSPet && ( Me.HealthFraction <= 0.5 || Target.HealthFraction <= 0.25 ) && Target.IsElite() && ( Target.MaxHealth >= Me.MaxHealth )
+                            () => UseAdditionalDPSPet && ( Me.HealthFraction <= 0.5 || Target.HealthFraction <= 0.25 ) && IsBoss(Target)
                         ))
                         return true;
                 }

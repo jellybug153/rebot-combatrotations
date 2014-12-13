@@ -146,7 +146,7 @@ namespace ReBot
                     "Immolate", 
                     () =>
                     !Target.HasAura("Immolate", true)
-                    || ( Target.AuraTimeRemaining("Immolate") <= 4.5f && SpellCooldown("Cataclysm") > 1 )
+                    || ( Target.AuraTimeRemaining("Immolate") <= 3.5f && SpellCooldown("Cataclysm") > 1 )
                 ))
                 return;
 

@@ -280,6 +280,16 @@ namespace Avoloos
             }
 
             /// <summary>
+            /// Gets the spell power.
+            /// </summary>
+            /// <value>The spell power.</value>
+            public int SpellPower {
+                get {
+                    return API.ExecuteLua<int>("return GetSpellBonusDamage(7)");
+                }
+            }
+
+            /// <summary>
             /// Determines whether the player has hand of guldan glyphed.
             /// </summary>
             /// <returns><c>true</c> if this hand of guldan is glyph; otherwise, <c>false</c>.</returns>

@@ -76,6 +76,20 @@ namespace Avoloos
         }
 
         /// <summary>
+        /// Warlock grimorie pets.
+        /// </summary>
+        public enum WarlockGrimoriePet
+        {
+            CurrentMainPet,
+            SoulImp,
+            Voidwalker,
+            Succubus,
+            Felhunter,
+            Infernal,
+            Doomguard,
+        }
+
+        /// <summary>
         /// Basic class which implements some convinience functions.
         /// </summary>
         abstract public class WarlockBaseRotation : CombatRotation
@@ -107,7 +121,7 @@ namespace Avoloos
             /// <summary>
             /// Should the bot use Terrorguard/Infernal
             /// </summary>
-            [JsonProperty("DPS: Use Terrorguard/Infernal automatically")]
+            [JsonProperty("DPS: Use Terrorguard/Infernal/Grimorie of Service automatically")]
             public bool UseAdditionalDPSPet = true;
 
             /// <summary>
@@ -163,6 +177,12 @@ namespace Avoloos
             /// </summary>
             [JsonProperty("General/DPS: +Level a Target has to have to be valued as Boss encounter")]
             public int BossLevelIncrease = 5;
+
+            /// <summary>
+            /// The selected pet.
+            /// </summary>
+            [JsonProperty("DPS: Grimorie of Service Pet"), JsonConverter(typeof(StringEnumConverter))]
+            public WarlockGrimoriePet SelectedGrimoriePet = WarlockGrimoriePet.CurrentMainPet;
 
             /// <summary>
             /// The fear tracking list.
@@ -582,6 +602,7 @@ namespace Avoloos
                     "Axe Toss",
                     () => !HasSpell("Grimoire of Sacrifice") && HasFelguard() && Target.IsCastingAndInterruptible()
                 );
+
                 //Heal
                 CastSelf("Unbound Will", () => !Me.CanParticipateInCombat);
                 CastSelf("Dark Bargain", () => Me.HealthFraction < 0.5);
@@ -612,6 +633,69 @@ namespace Avoloos
                             () => UseAdditionalDPSPet && ( Me.HealthFraction <= 0.5 || Target.HealthFraction <= 0.25 ) && IsBoss(Target)
                         ))
                         return true;
+                }
+
+                if (HasSpell("Grimorie: Imp")) {
+                    bool GrimorieCondition = ( Target.MaxHealth >= Me.MaxHealth && Target.IsElite() ) || IsBoss(Target);
+                    if (GrimorieCondition) {
+                        var GrimoriePet = SelectedGrimoriePet;
+
+                        if (GrimoriePet == WarlockGrimoriePet.CurrentMainPet) {
+                            switch (SelectedPet) {
+                                case WarlockPet.AutoSelect:
+                                    if (Target.IsCastingAndInterruptible())
+                                        GrimoriePet = WarlockGrimoriePet.Felhunter;
+                                    else
+                                        GrimoriePet = WarlockGrimoriePet.Doomguard;
+                                    break;
+                                case WarlockPet.SoulImp:
+                                    GrimoriePet = WarlockGrimoriePet.SoulImp;
+                                    break;
+                                case WarlockPet.Voidwalker:
+                                    GrimoriePet = WarlockGrimoriePet.Voidwalker;
+                                    break;
+                                case WarlockPet.Succubus:
+                                    GrimoriePet = WarlockGrimoriePet.Succubus;
+                                    break;
+                                case WarlockPet.Felhunter:
+                                    GrimoriePet = WarlockGrimoriePet.Felhunter;
+                                    break;
+                                case WarlockPet.Doomguard:
+                                    GrimoriePet = WarlockGrimoriePet.Doomguard;
+                                    break;
+                                case WarlockPet.Infernal:
+                                    GrimoriePet = WarlockGrimoriePet.Infernal;
+                                    break;
+                            }
+                        }
+
+                        switch (GrimoriePet) {
+                            case WarlockGrimoriePet.SoulImp:
+                                if (Cast("Grimorie: Imp"))
+                                    return true;
+                                break;
+                            case WarlockGrimoriePet.Voidwalker:
+                                if (Cast("Grimorie: Voidwalker"))
+                                    return true;
+                                break;
+                            case WarlockGrimoriePet.Succubus:
+                                if (Cast("Grimorie: Succubus"))
+                                    return true;
+                                break;
+                            case WarlockGrimoriePet.Felhunter:
+                                if (Cast("Grimorie: Felhunter"))
+                                    return true;
+                                break;
+                            case WarlockGrimoriePet.Doomguard:
+                                if (Cast("Grimorie: Doomguard"))
+                                    return true;
+                                break;
+                            case WarlockGrimoriePet.Infernal:
+                                if (Cast("Grimorie: Infernal"))
+                                    return true;
+                                break;
+                        }
+                    }
                 }
 
                 if (CastSelf(

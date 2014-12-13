@@ -643,10 +643,10 @@ namespace Avoloos
                     if (CastOnTerrain(
                             HasSpell("Grimoire of Supremacy") ? "Summon Abyssal" : "Summon Infernal",
                             Target.Position,
-                            () => UseAdditionalDPSPet && ( ( ( Me.HealthFraction <= 0.75 || Target.HealthFraction <= 0.25 ) ) || Adds.Count >= 3 ) && IsBoss(Target)
+                            () => UseAdditionalDPSPet && ( Adds.Count >= 3 ) && IsBoss(Target)
                         ) || Cast(
                             HasSpell("Grimoire of Supremacy") ? "Summon Terrorguard" : "Summon Doomguard",
-                            () => UseAdditionalDPSPet && ( Me.HealthFraction <= 0.5 || Target.HealthFraction <= 0.25 ) && IsBoss(Target)
+                            () => UseAdditionalDPSPet && IsBoss(Target)
                         ))
                         return true;
                 }

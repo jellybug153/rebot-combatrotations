@@ -2,7 +2,6 @@ using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using ReBot.API;
-using WarlockCommon;
 using System;
 using System.Collections.Generic;
 using Geometry;
@@ -10,6 +9,164 @@ using System.Runtime.InteropServices;
 
 namespace Avoloos
 {
+    public enum WarlockPet
+    {
+        AutoSelect = 0,
+        SoulImp,
+        Voidwalker,
+        Succubus,
+        Felhunter,
+        Felguard,
+        Infernal,
+        Doomguard,
+    }
+
+
+    //Display IDs
+    public enum WlPetDisplayId
+    {
+        SoulImp = 4449,
+        Voidwalker = 1132,
+        Felhunter = 850,
+        Succubus = 4162,
+        Felguard = 61493,
+        Infernal = 169,
+        // Infernal
+        Doomguard = 1912,
+        //Doomguard
+        ImpSoulImp = 44152,
+        ImpVoidwalker = 44542,
+        ImpFelhunter = 44153,
+        ImpSuccubus = 44610,
+        ImpFelguard = 44609,
+        ImpInfernal = 51650,
+        ImpDoomguard = 22809,
+    }
+
+
+    // This extension class helps to prevent duplicate code in the routines
+    public static class WarlockHelper
+    {
+        /// <summary>
+        /// Summon the warlock pet, if we have no alive pet or if current pet is not the pet we want
+        /// </summary>
+        public static bool SummonPet(this CombatRotation rota, WarlockPet pet)
+        {
+            bool hasBetterPets = rota.HasSpell("Grimoire of Supremacy");
+
+            // let rebot choose the best pet
+            if (pet == WarlockPet.AutoSelect) {
+                if (rota.HasSpell("Demonic Servitude"))
+                    pet = WarlockPet.Infernal;
+                else if (rota.HasSpell("Summon Felguard"))
+                    pet = WarlockPet.Felguard;
+                else if (rota.CurrentBotName == "PvP" && rota.HasSpell("Summon Felhunter"))
+                    pet = WarlockPet.Felhunter;
+                else if (rota.Me.Level < rota.Me.MaxLevel && rota.HasSpell("Summon Voidwalker"))
+                    pet = WarlockPet.Voidwalker;
+                else if (hasBetterPets && rota.HasSpell("Summon Felhunter"))
+                    pet = WarlockPet.Felhunter;
+                else if (rota.HasSpell("Summon Voidwalker"))
+                    pet = WarlockPet.Voidwalker;
+                else if (rota.HasSpell("Summon Imp"))
+                    pet = WarlockPet.SoulImp;
+                else
+                    return false; // we can not summon a pet 
+            }
+
+
+            string spell = null;
+            int displayId = 0;
+
+            switch (pet) {
+                case WarlockPet.Felhunter:
+                    displayId = hasBetterPets ? (int) WlPetDisplayId.ImpFelhunter : (int) WlPetDisplayId.Felhunter;
+                    spell = "Summon Felhunter";
+                    break;
+
+                case WarlockPet.Voidwalker:
+                    displayId = hasBetterPets ? (int) WlPetDisplayId.ImpVoidwalker : (int) WlPetDisplayId.Voidwalker;
+                    spell = "Summon Voidwalker";
+                    break;
+
+                case WarlockPet.Felguard:
+                    displayId = hasBetterPets ? (int) WlPetDisplayId.ImpFelguard : (int) WlPetDisplayId.Felguard;
+                    spell = "Summon Felguard";
+                    break;
+
+                case WarlockPet.SoulImp:
+                    displayId = hasBetterPets ? (int) WlPetDisplayId.ImpSoulImp : (int) WlPetDisplayId.SoulImp;
+                    spell = "Summon Imp";
+                    break;
+
+                case WarlockPet.Succubus:
+                    displayId = hasBetterPets ? (int) WlPetDisplayId.ImpSuccubus : (int) WlPetDisplayId.Succubus;
+                    spell = "Summon Succubus";
+                    break;
+
+                case WarlockPet.Infernal:
+                    displayId = hasBetterPets ? (int) WlPetDisplayId.ImpInfernal : (int) WlPetDisplayId.Infernal;
+                    spell = "Summon Infernal";
+                    break;
+
+                case WarlockPet.Doomguard:
+                    displayId = hasBetterPets ? (int) WlPetDisplayId.ImpDoomguard : (int) WlPetDisplayId.Doomguard;
+                    spell = "Summon Doomguard";
+                    break;
+
+            }
+
+            if (spell != null)
+                return rota.CastSelfPreventDouble(
+                    spell,
+                    () => !rota.Me.HasAlivePet || rota.Me.Pet != null && rota.Me.Pet.DisplayId != displayId
+                );
+
+            return false;
+        }
+
+        /// <summary>
+        /// True if current pet is this pet
+        /// </summary>
+        public static bool IsPetActive(this CombatRotation rota, string spellname)
+        {
+            if (rota.Me.Pet == null)
+                return false;
+
+            spellname = spellname.ToLowerInvariant();
+            switch ((WlPetDisplayId) rota.Me.Pet.DisplayId) {
+                case WlPetDisplayId.Felhunter:
+                case WlPetDisplayId.ImpFelhunter:
+                    return "summon felhunter".Contains(spellname);
+
+                case WlPetDisplayId.Voidwalker:
+                case WlPetDisplayId.ImpVoidwalker:
+                    return "summon voidwalker".Contains(spellname);
+
+                case WlPetDisplayId.Felguard:
+                case WlPetDisplayId.ImpFelguard:
+                    return "summon felguard".Contains(spellname);
+
+                case WlPetDisplayId.SoulImp:
+                case WlPetDisplayId.ImpSoulImp:
+                    return "summon imp".Contains(spellname);
+
+                case WlPetDisplayId.Succubus:
+                case WlPetDisplayId.ImpSuccubus:
+                    return "summon succubus".Contains(spellname);
+
+                case WlPetDisplayId.Infernal:
+                case WlPetDisplayId.ImpInfernal:
+                    return "summon infernal".Contains(spellname);
+
+                case WlPetDisplayId.Doomguard:
+                case WlPetDisplayId.ImpDoomguard:
+                    return "summon doomguard".Contains(spellname);
+            }
+            return false;
+        }
+    }
+
     /// <summary>
     /// This class represents an Object, which can expire.
     /// </summary>

@@ -146,7 +146,7 @@ namespace ReBot
                     "Immolate", 
                     () =>
                     !Target.HasAura("Immolate", true)
-                    || Target.AuraTimeRemaining("Immolate") <= 4.5f
+                    || ( Target.AuraTimeRemaining("Immolate") <= 4.5f && SpellCooldown("Cataclysm") > 1 )
                 ))
                 return;
 
@@ -176,6 +176,7 @@ namespace ReBot
             if (Cast("Conflagrate", () => SpellCharges("Conflagrate") >= 2))
                 return;
 
+            // Refresh with cataclysm if possible
             if (CastSpellOnBestAoETarget("Cataclysm"))
                 return;
                 

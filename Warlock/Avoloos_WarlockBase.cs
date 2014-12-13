@@ -258,6 +258,11 @@ namespace Avoloos
                 );
             }
 
+            /// <summary>
+            /// Returns the AoE Range of a spell
+            /// </summary>
+            /// <returns>The AoE range.</returns>
+            /// <param name="spellName">Spell name.</param>
             public float SpellAoERange(string spellName)
             {
                 var aoeRange = AoESpellRadius.FirstOrDefault(u => u.Key == spellName).Value;

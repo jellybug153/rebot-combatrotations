@@ -160,7 +160,7 @@ namespace Avoloos
             /// Should the bot use Terrorguard/Infernal on bosses only
             /// </summary>
             [JsonProperty("DPS: Use Terrorguard/Infernal/Grimorie of Service on Boss only")]
-            public bool UseAdditionalDPSPetBossOnly = false;
+            public bool UseAdditionalDPSPetBossOnly = true;
 
             /// <summary>
             /// Should the bot use dark Soul
@@ -220,7 +220,7 @@ namespace Avoloos
             /// Defines the factor of HP a unit has to have to be counted as a boss.
             /// </summary>
             [JsonProperty("General/DPS: Percentual factor of a Targets MaxHP in relation to Players MaxHP to be valued as Bossencounter")]
-            public int BossHealthPercentage = 200;
+            public int BossHealthPercentage = 500;
 
             /// <summary>
             /// Defines the +Level a Unit should have to be counted as a boss.

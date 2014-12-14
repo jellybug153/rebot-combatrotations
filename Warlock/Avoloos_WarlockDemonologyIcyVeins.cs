@@ -128,7 +128,7 @@ namespace ReBot
                         "Immolation Aura",
                         Me,
                         null,
-                        u => Me.HealthFraction > ( HellfireHealthPercentage / 100 )
+                        u => Me.HealthFraction > ( HellfireHealthPercentage / 100f )
                     ))
                     return true;
             }

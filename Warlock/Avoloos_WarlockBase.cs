@@ -713,7 +713,7 @@ namespace Avoloos
             /// <param name="o">The Unit we want to check</param>
             public bool IsBoss(UnitObject o)
             {
-                return ( o.IsElite() && o.MaxHealth * ( BossHealthPercentage / 100 ) >= Me.MaxHealth ) || o.Level >= Me.Level + BossLevelIncrease;
+                return ( o.IsElite() && o.MaxHealth * ( BossHealthPercentage / 100f ) >= Me.MaxHealth ) || o.Level >= Me.Level + BossLevelIncrease;
             }
 
             /// <summary>
@@ -869,10 +869,9 @@ namespace Avoloos
                 if (Cast(
                         "Health Funnel",
                         Me.Pet,
-                        () => 
-                        Me.HasAlivePet
-                        && Me.Pet.HealthFraction <= ( FunnelPetHp / 100 )
-                        && Me.HealthFraction >= ( FunnelPlayerHp / 100 )
+                        () => Me.HasAlivePet
+                        && Me.Pet.HealthFraction <= ( FunnelPetHp / 100f )
+                        && Me.HealthFraction >= ( FunnelPlayerHp / 100f )
                     ))
                     return true;
                     

@@ -276,12 +276,10 @@ namespace Avoloos
                         pet = WarlockPet.Felguard;
                     else if (CurrentBotName == "PvP" && HasSpell("Summon Felhunter"))
                         pet = WarlockPet.Felhunter;
-                    else if (Me.Level < Me.MaxLevel && HasSpell("Summon Voidwalker"))
+                    else if (HasSpell("Summon Voidwalker") && Group.GetNumGroupMembers() <= 1)
                         pet = WarlockPet.Voidwalker;
                     else if (hasBetterPets && HasSpell("Summon Felhunter"))
                         pet = WarlockPet.Felhunter;
-                    else if (HasSpell("Summon Voidwalker"))
-                        pet = WarlockPet.Voidwalker;
                     else if (HasSpell("Summon Imp"))
                         pet = WarlockPet.SoulImp;
                     else

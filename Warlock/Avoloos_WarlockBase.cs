@@ -163,6 +163,12 @@ namespace Avoloos
             public bool UseDarkSoul = true;
 
             /// <summary>
+            /// Should the bot use dark Soul
+            /// </summary>
+            [JsonProperty("DPS: Use Dark Soul on Boss only")]
+            public bool UseDarkSoulBossOnly = false;
+
+            /// <summary>
             /// Should Shadofury be used to intterupt?
             /// </summary>
             [JsonProperty("CC: Use Shadowfury as Interrupt")]
@@ -246,7 +252,7 @@ namespace Avoloos
             protected WarlockBaseRotation()
             {
                 FearTrackingList = new List<ExpirableObject>();
-                Info("Warlock Combat Rotation - Version 1.1 by Avoloos.");
+                Info("Warlock Combat Rotation - Version 1.2 by Avoloos.");
             }
 
             /// <summary>
@@ -737,7 +743,7 @@ namespace Avoloos
             {
                 if (UseDarkSoul) {
                     //no globalcd
-                    bool DarkSoulCondition = ( Target.IsInCombatRangeAndLoS && Target.MaxHealth >= Me.MaxHealth && Target.IsElite() ) || IsBoss(Target);
+                    bool DarkSoulCondition = ( Target.IsInCombatRangeAndLoS && Target.MaxHealth >= Me.MaxHealth && Target.IsElite() && !UseDarkSoulBossOnly ) || IsBoss(Target);
                     CastSelfPreventDouble(
                         "Dark Soul: Instability",
                         () => DarkSoulCondition,

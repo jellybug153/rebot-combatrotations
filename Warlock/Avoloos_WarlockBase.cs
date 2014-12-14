@@ -543,6 +543,10 @@ namespace Avoloos
                 return false;
             }
 
+            /// <summary>
+            /// Casts the shadowfury if feasible.
+            /// </summary>
+            /// <returns><c>true</c>, if shadowfury was cast, <c>false</c> otherwise.</returns>
             protected bool CastShadowfuryIfFeasible()
             {
                 if (!UseShadowfuryAsInterrupt
@@ -646,6 +650,8 @@ namespace Avoloos
                     ))
                     return true;
 
+                if (DoHealingAndManaManagement())
+                    return true;
 
                 if (SummonPet())
                     return true;
@@ -866,13 +872,27 @@ namespace Avoloos
                         }
                     }
                 }
+                    
+                if (CurrentBotName == "PvP" && CastFearIfFeasible())
+                    return true;
 
+                if (CastShadowfuryIfFeasible())
+                    return true;
+
+                if (DoHealingAndManaManagement())
+                    return true;
+                    
+                return HasGlobalCooldown();
+            }
+
+            bool DoHealingAndManaManagement()
+            {
                 if (CastSelf(
                         "Ember Tap",
                         () => Me.HealthFraction <= 0.35 && Me.GetPower(WoWPowerType.WarlockDestructionBurningEmbers) >= 1
                     ))
                     return true;
-
+                    
                 if (Cast(
                         "Health Funnel",
                         Me.Pet,
@@ -880,12 +900,6 @@ namespace Avoloos
                         && Me.Pet.HealthFraction <= ( FunnelPetHp / 100f )
                         && Me.HealthFraction >= ( FunnelPlayerHp / 100f )
                     ))
-                    return true;
-                    
-                if (CurrentBotName == "PvP" && CastFearIfFeasible())
-                    return true;
-
-                if (CastShadowfuryIfFeasible())
                     return true;
 
                 // Mana management
@@ -895,8 +909,8 @@ namespace Avoloos
                         2000
                     ))
                     return true;
-                    
-                return HasGlobalCooldown();
+
+                return false;
             }
         }
     }

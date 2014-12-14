@@ -29,7 +29,7 @@ namespace ReBot
 
         int ShadowBurnDamage {
             get {
-                return (int) ( ( ( 315 / 100 ) * SpellPower ) * 1.24 );
+                return (int) ( ( ( 315 / 100f ) * SpellPower ) * 1.24 );
             }
         }
 
@@ -70,7 +70,7 @@ namespace ReBot
                 if (!UseHavocOnFocus)
                     havocAdd = Adds
                         .OrderByDescending(x => x.Health)
-                        .FirstOrDefault(x => x.HealthFraction <= HavocHealthPercentage / 100 && x.IsInLoS && x.DistanceSquared <= SpellMaxRangeSq("Havoc")) ?? Adds.FirstOrDefault();
+                        .FirstOrDefault(x => x.HealthFraction <= HavocHealthPercentage / 100f && x.IsInLoS && x.DistanceSquared <= SpellMaxRangeSq("Havoc")) ?? Adds.FirstOrDefault();
 
                 if (havocAdd != null && havocAdd.IsFriendly)
                     havocAdd = havocAdd.Target;

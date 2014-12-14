@@ -122,7 +122,7 @@ namespace ReBot
         {
             // Lets see what the community suggests we will use it on CD for now
             if (HasSpell("Cataclysm")) {
-                if (Cast("Cataclysm", u))
+                if (CastSpellOnBestAoETarget("Cataclysm"))
                     return true;
             }
             if (Cast(

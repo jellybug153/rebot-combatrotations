@@ -2,14 +2,46 @@ using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using ReBot.API;
-using WarlockCommon;
 using System;
 using System.Collections.Generic;
 using Geometry;
-using System.Runtime.InteropServices;
 
 namespace Avoloos
 {
+    public enum WarlockPet
+    {
+        AutoSelect = 0,
+        SoulImp,
+        Voidwalker,
+        Succubus,
+        Felhunter,
+        Felguard,
+        Infernal,
+        Doomguard,
+    }
+
+
+    //Display IDs
+    public enum WlPetDisplayId
+    {
+        SoulImp = 4449,
+        Voidwalker = 1132,
+        Felhunter = 850,
+        Succubus = 4162,
+        Felguard = 61493,
+        Infernal = 169,
+        // Infernal
+        Doomguard = 1912,
+        //Doomguard
+        ImpSoulImp = 44152,
+        ImpVoidwalker = 44542,
+        ImpFelhunter = 44153,
+        ImpSuccubus = 44610,
+        ImpFelguard = 44609,
+        ImpInfernal = 51650,
+        ImpDoomguard = 22809,
+    }
+
     /// <summary>
     /// This class represents an Object, which can expire.
     /// </summary>
@@ -70,9 +102,23 @@ namespace Avoloos
         /// <summary>
         /// Warlock spell Ids
         /// </summary>
-        enum WarlockSpellIds
+        public enum WarlockSpellIds
         {
             CATACLYSM = 152108
+        }
+
+        /// <summary>
+        /// Warlock grimorie pets.
+        /// </summary>
+        public enum WarlockGrimoriePet
+        {
+            CurrentMainPet,
+            SoulImp,
+            Voidwalker,
+            Succubus,
+            Felhunter,
+            Infernal,
+            Doomguard,
         }
 
         /// <summary>
@@ -107,14 +153,26 @@ namespace Avoloos
             /// <summary>
             /// Should the bot use Terrorguard/Infernal
             /// </summary>
-            [JsonProperty("DPS: Use Terrorguard/Infernal automatically")]
+            [JsonProperty("DPS: Use Terrorguard/Infernal/Grimorie of Service automatically")]
             public bool UseAdditionalDPSPet = true;
+
+            /// <summary>
+            /// Should the bot use Terrorguard/Infernal on bosses only
+            /// </summary>
+            [JsonProperty("DPS: Use Terrorguard/Infernal/Grimorie of Service on Boss only")]
+            public bool UseAdditionalDPSPetBossOnly = true;
 
             /// <summary>
             /// Should the bot use dark Soul
             /// </summary>
             [JsonProperty("DPS: Use Dark Soul automatically")]
             public bool UseDarkSoul = true;
+
+            /// <summary>
+            /// Should the bot use dark Soul
+            /// </summary>
+            [JsonProperty("DPS: Use Dark Soul on Boss only")]
+            public bool UseDarkSoulBossOnly = false;
 
             /// <summary>
             /// Should Shadofury be used to intterupt?
@@ -153,6 +211,30 @@ namespace Avoloos
             public bool AutomaticManaManagement = true;
 
             /// <summary>
+            /// Life Tap Player HP condition in %
+            /// </summary>
+            [JsonProperty("General: Life of Player in % until Life Tap gets used")]
+            public int AutomaticManamanagementPercentage = 65;
+
+            /// <summary>
+            /// Defines the factor of HP a unit has to have to be counted as a boss.
+            /// </summary>
+            [JsonProperty("General/DPS: Percentual factor of a Targets MaxHP in relation to Players MaxHP to be valued as Bossencounter")]
+            public int BossHealthPercentage = 500;
+
+            /// <summary>
+            /// Defines the +Level a Unit should have to be counted as a boss.
+            /// </summary>
+            [JsonProperty("General/DPS: +Level a Target has to have to be valued as Boss encounter")]
+            public int BossLevelIncrease = 5;
+
+            /// <summary>
+            /// The selected pet.
+            /// </summary>
+            [JsonProperty("DPS: Grimorie of Service Pet"), JsonConverter(typeof(StringEnumConverter))]
+            public WarlockGrimoriePet SelectedGrimoriePet = WarlockGrimoriePet.CurrentMainPet;
+
+            /// <summary>
             /// The fear tracking list.
             /// </summary>
             protected List<ExpirableObject> FearTrackingList;
@@ -176,6 +258,125 @@ namespace Avoloos
             protected WarlockBaseRotation()
             {
                 FearTrackingList = new List<ExpirableObject>();
+                Info("Warlock Combat Rotation - Version 1.3 by Avoloos.");
+            }
+
+            /// <summary>
+            /// Summon the warlock pet, if we have no alive pet or if current pet is not the pet we want
+            /// </summary>
+            public bool SummonPet(WarlockPet pet)
+            {
+                bool hasBetterPets = HasSpell("Grimoire of Supremacy");
+
+                // let rebot choose the best pet
+                if (pet == WarlockPet.AutoSelect) {
+                    if (HasSpell("Demonic Servitude"))
+                        pet = WarlockPet.Infernal;
+                    else if (HasSpell("Summon Felguard"))
+                        pet = WarlockPet.Felguard;
+                    else if (CurrentBotName == "PvP" && HasSpell("Summon Felhunter"))
+                        pet = WarlockPet.Felhunter;
+                    else if (HasSpell("Summon Voidwalker") && Group.GetNumGroupMembers() <= 1)
+                        pet = WarlockPet.Voidwalker;
+                    else if (hasBetterPets && HasSpell("Summon Felhunter"))
+                        pet = WarlockPet.Felhunter;
+                    else if (HasSpell("Summon Imp"))
+                        pet = WarlockPet.SoulImp;
+                    else
+                        return false; // we can not summon a pet 
+                }
+
+
+                string spell = null;
+                int displayId = 0;
+
+                switch (pet) {
+                    case WarlockPet.Felhunter:
+                        displayId = hasBetterPets ? (int) WlPetDisplayId.ImpFelhunter : (int) WlPetDisplayId.Felhunter;
+                        spell = "Summon Felhunter";
+                        break;
+
+                    case WarlockPet.Voidwalker:
+                        displayId = hasBetterPets ? (int) WlPetDisplayId.ImpVoidwalker : (int) WlPetDisplayId.Voidwalker;
+                        spell = "Summon Voidwalker";
+                        break;
+
+                    case WarlockPet.Felguard:
+                        displayId = hasBetterPets ? (int) WlPetDisplayId.ImpFelguard : (int) WlPetDisplayId.Felguard;
+                        spell = "Summon Felguard";
+                        break;
+
+                    case WarlockPet.SoulImp:
+                        displayId = hasBetterPets ? (int) WlPetDisplayId.ImpSoulImp : (int) WlPetDisplayId.SoulImp;
+                        spell = "Summon Imp";
+                        break;
+
+                    case WarlockPet.Succubus:
+                        displayId = hasBetterPets ? (int) WlPetDisplayId.ImpSuccubus : (int) WlPetDisplayId.Succubus;
+                        spell = "Summon Succubus";
+                        break;
+
+                    case WarlockPet.Infernal:
+                        displayId = hasBetterPets ? (int) WlPetDisplayId.ImpInfernal : (int) WlPetDisplayId.Infernal;
+                        spell = "Summon Infernal";
+                        break;
+
+                    case WarlockPet.Doomguard:
+                        displayId = hasBetterPets ? (int) WlPetDisplayId.ImpDoomguard : (int) WlPetDisplayId.Doomguard;
+                        spell = "Summon Doomguard";
+                        break;
+
+                }
+
+                if (spell != null)
+                    return CastSelfPreventDouble(
+                        spell,
+                        () => !Me.HasAlivePet || Me.Pet != null && Me.Pet.DisplayId != displayId,
+                        5000 // 5 seconds to be sure it spawned on slow systems or serverlag
+                    );
+
+                return false;
+            }
+
+            /// <summary>
+            /// True if current pet is this pet
+            /// </summary>
+            public bool IsPetActive(string spellname)
+            {
+                if (Me.Pet == null)
+                    return false;
+
+                spellname = spellname.ToLowerInvariant();
+                switch ((WlPetDisplayId) Me.Pet.DisplayId) {
+                    case WlPetDisplayId.Felhunter:
+                    case WlPetDisplayId.ImpFelhunter:
+                        return "summon felhunter".Contains(spellname);
+
+                    case WlPetDisplayId.Voidwalker:
+                    case WlPetDisplayId.ImpVoidwalker:
+                        return "summon voidwalker".Contains(spellname);
+
+                    case WlPetDisplayId.Felguard:
+                    case WlPetDisplayId.ImpFelguard:
+                        return "summon felguard".Contains(spellname);
+
+                    case WlPetDisplayId.SoulImp:
+                    case WlPetDisplayId.ImpSoulImp:
+                        return "summon imp".Contains(spellname);
+
+                    case WlPetDisplayId.Succubus:
+                    case WlPetDisplayId.ImpSuccubus:
+                        return "summon succubus".Contains(spellname);
+
+                    case WlPetDisplayId.Infernal:
+                    case WlPetDisplayId.ImpInfernal:
+                        return "summon infernal".Contains(spellname);
+
+                    case WlPetDisplayId.Doomguard:
+                    case WlPetDisplayId.ImpDoomguard:
+                        return "summon doomguard".Contains(spellname);
+                }
+                return false;
             }
 
             /// <summary>
@@ -191,10 +392,10 @@ namespace Avoloos
             public bool CastSpellOnBestAoETarget(string spellName, Func<UnitObject, bool> castWhen = null, Func<UnitObject, bool> bestTargetCondition = null, int preventTime = 0, UnitObject targetOverride = null)
             {
                 if (castWhen == null)
-                    castWhen = (_) => true;
+                    castWhen = ( _ => true );
 
                 if (bestTargetCondition == null)
-                    bestTargetCondition = (_) => true;
+                    bestTargetCondition = ( _ => true );
 
                 var aoeRange = SpellAoERange(spellName);
                 var bestTarget = targetOverride ?? Adds
@@ -226,6 +427,11 @@ namespace Avoloos
                 );
             }
 
+            /// <summary>
+            /// Returns the AoE Range of a spell
+            /// </summary>
+            /// <returns>The AoE range.</returns>
+            /// <param name="spellName">Spell name.</param>
             public float SpellAoERange(string spellName)
             {
                 var aoeRange = AoESpellRadius.FirstOrDefault(u => u.Key == spellName).Value;
@@ -245,6 +451,16 @@ namespace Avoloos
                 }
 
                 return aoeRange;
+            }
+
+            /// <summary>
+            /// Gets the spell power.
+            /// </summary>
+            /// <value>The spell power.</value>
+            public int SpellPower {
+                get {
+                    return API.ExecuteLua<int>("return GetSpellBonusDamage(7)");
+                }
             }
 
             /// <summary>
@@ -337,6 +553,10 @@ namespace Avoloos
                 return false;
             }
 
+            /// <summary>
+            /// Casts the shadowfury if feasible.
+            /// </summary>
+            /// <returns><c>true</c>, if shadowfury was cast, <c>false</c> otherwise.</returns>
             protected bool CastShadowfuryIfFeasible()
             {
                 if (!UseShadowfuryAsInterrupt
@@ -346,8 +566,8 @@ namespace Avoloos
 
                 if (UseShadowfuryAsInterrupt && CastSpellOnBestAoETarget(
                         "Shadowfury", 
-                        (u) => u.IsCastingAndInterruptible(), 
-                        (u) => u.IsCastingAndInterruptible()
+                        u => u.IsCastingAndInterruptible(), 
+                        u => u.IsCastingAndInterruptible()
                     ))
                     return true;
 
@@ -360,9 +580,7 @@ namespace Avoloos
             /// <returns><c>true</c> if the current pet is a Felguard; otherwise, <c>false</c>.</returns>
             protected bool HasFelguard()
             {
-                if (!Me.HasAlivePet)
-                    return false;
-                return ( WlPetDisplayId.Felguard.Equals(Me.Pet.DisplayId) || WlPetDisplayId.ImpFelguard.Equals(Me.Pet.DisplayId) );
+                return Me.HasAlivePet && ( WlPetDisplayId.Felguard.Equals(Me.Pet.DisplayId) || WlPetDisplayId.ImpFelguard.Equals(Me.Pet.DisplayId) );
             }
 
             /// <summary>
@@ -442,6 +660,8 @@ namespace Avoloos
                     ))
                     return true;
 
+                if (DoHealingAndManaManagement())
+                    return true;
 
                 if (SummonPet())
                     return true;
@@ -459,7 +679,7 @@ namespace Avoloos
                     if (!HasAura("Grimoire of Sacrifice")) {
                         if (CastSelf(
                                 "Flames of Xoroth",
-                                () => !Me.HasAlivePet && Me.GetPower(WoWPowerType.WarlockDestructionBurningEmbers) >= 1
+                                () => !Me.HasAlivePet && Me.InCombat && Me.GetPower(WoWPowerType.WarlockDestructionBurningEmbers) >= 1
                             ))
                             return true;
 
@@ -469,7 +689,7 @@ namespace Avoloos
                             && Me.GetPower(WoWPowerType.WarlockSoulShards) >= 1
                             && !HasAura("Soulburn")
                         );
-                        if (this.SummonPet(SelectedPet))
+                        if (SummonPet(SelectedPet))
                             return true;
                         if (CastSelf("Grimoire of Sacrifice", () => Me.HasAlivePet))
                             return true;
@@ -484,7 +704,7 @@ namespace Avoloos
                         "Soulburn",
                         () => !Me.HasAlivePet && Me.GetPower(WoWPowerType.WarlockSoulShards) >= 1
                     );
-                    if (this.SummonPet(SelectedPet))
+                    if (SummonPet(SelectedPet))
                         return true;
                 } else if (UsePet && !Me.InCombat) {
 					if (this.SummonPet(SelectedPet))
@@ -513,6 +733,16 @@ namespace Avoloos
             }
 
             /// <summary>
+            /// Checks if the given unit may be a boss unit.
+            /// </summary>
+            /// <returns><c>true</c>, if unit is (maybe) a boss, <c>false</c> otherwise.</returns>
+            /// <param name="o">The Unit we want to check</param>
+            public bool IsBoss(UnitObject o)
+            {
+                return ( o.IsElite() && o.MaxHealth >= Me.MaxHealth * ( BossHealthPercentage / 100f ) ) || o.Level >= Me.Level + BossLevelIncrease;
+            }
+
+            /// <summary>
             /// Do all the basic stuff which is shared among all specialisations.
             /// </summary>
             /// <returns><c>true</c>, if there was an GCD after a cast, <c>false</c> otherwise.</returns>
@@ -520,34 +750,35 @@ namespace Avoloos
             {
                 if (UseDarkSoul) {
                     //no globalcd
+                    bool DarkSoulCondition = ( Target.IsInCombatRangeAndLoS && Target.MaxHealth >= Me.MaxHealth && Target.IsElite() && !UseDarkSoulBossOnly ) || IsBoss(Target);
                     CastSelfPreventDouble(
                         "Dark Soul: Instability",
-                        () => Target.IsInCombatRangeAndLoS && Target.MaxHealth > Me.MaxHealth && Target.IsElite(),
+                        () => DarkSoulCondition,
                         20000
                     );
                     CastSelfPreventDouble(
                         "Dark Soul: Knowledge",
-                        () => Target.IsInCombatRangeAndLoS && Target.MaxHealth > Me.MaxHealth && Target.IsElite(),
+                        () => DarkSoulCondition,
                         20000
                     );
                     CastSelfPreventDouble(
                         "Dark Soul: Misery",
-                        () => Target.IsInCombatRangeAndLoS && Target.MaxHealth > Me.MaxHealth && Target.IsElite(),
+                        () => DarkSoulCondition,
                         20000
                     );
                 }
 
                 Cast(
                     "Command Demon",
-                    () => !HasSpell("Grimoire of Sacrifice") && ( this.IsPetActive("Summon Felhunter") || SelectedPet == WarlockPet.Felhunter ) && Target.IsCastingAndInterruptible()
+                    () => !HasSpell("Grimoire of Sacrifice") && ( IsPetActive("Summon Felhunter") || SelectedPet == WarlockPet.Felhunter ) && Target.IsCastingAndInterruptible()
                 );
                 Cast(
                     "Command Demon",
-                    () => !HasSpell("Grimoire of Sacrifice") && ( this.IsPetActive("Summon Imp") || SelectedPet == WarlockPet.SoulImp ) && Me.HealthFraction <= 0.75
+                    () => !HasSpell("Grimoire of Sacrifice") && ( IsPetActive("Summon Imp") || SelectedPet == WarlockPet.SoulImp ) && Me.HealthFraction <= 0.75
                 );
                 Cast(
                     "Command Demon",
-                    () => !HasSpell("Grimoire of Sacrifice") && ( this.IsPetActive("Summon Voidwalker") || SelectedPet == WarlockPet.Voidwalker ) && Me.HealthFraction < 0.5
+                    () => !HasSpell("Grimoire of Sacrifice") && ( IsPetActive("Summon Voidwalker") || SelectedPet == WarlockPet.Voidwalker ) && Me.HealthFraction < 0.5
                 );
                 Cast(
                     "Command Demon",
@@ -562,6 +793,7 @@ namespace Avoloos
                     "Axe Toss",
                     () => !HasSpell("Grimoire of Sacrifice") && HasFelguard() && Target.IsCastingAndInterruptible()
                 );
+
                 //Heal
                 CastSelf("Unbound Will", () => !Me.CanParticipateInCombat);
                 CastSelf("Dark Bargain", () => Me.HealthFraction < 0.5);
@@ -591,28 +823,73 @@ namespace Avoloos
                     if (CastOnTerrain(
                             HasSpell("Grimoire of Supremacy") ? "Summon Abyssal" : "Summon Infernal",
                             Target.Position,
-                            () => UseAdditionalDPSPet && ( ( ( Me.HealthFraction <= 0.75 || Target.HealthFraction <= 0.25 ) && Target.IsElite() ) || Adds.Count >= 3 ) && ( Target.MaxHealth >= Me.MaxHealth )
+                            () => ( ( UseAdditionalDPSPet && Target.MaxHealth >= Me.MaxHealth && Target.IsElite() && !UseAdditionalDPSPetBossOnly ) || IsBoss(Target) ) && ( Adds.Count >= 3 )
                         ) || Cast(
                             HasSpell("Grimoire of Supremacy") ? "Summon Terrorguard" : "Summon Doomguard",
-                            () => UseAdditionalDPSPet && ( Me.HealthFraction <= 0.5 || Target.HealthFraction <= 0.25 ) && Target.IsElite() && ( Target.MaxHealth >= Me.MaxHealth )
+                            () => ( UseAdditionalDPSPet && Target.MaxHealth >= Me.MaxHealth && Target.IsElite() && !UseAdditionalDPSPetBossOnly ) || IsBoss(Target)
                         ))
                         return true;
                 }
 
-                if (CastSelf(
-                        "Ember Tap",
-                        () => Me.HealthFraction <= 0.35 && Me.GetPower(WoWPowerType.WarlockDestructionBurningEmbers) >= 1
-                    ))
-                    return true;
+                if (HasSpell("Grimorie: Imp")) {
+                    bool GrimorieCondition = ( UseAdditionalDPSPet && Target.MaxHealth >= Me.MaxHealth && Target.IsElite() && !UseAdditionalDPSPetBossOnly ) || IsBoss(Target);
+                    if (GrimorieCondition) {
+                        var GrimoriePet = SelectedGrimoriePet;
 
-                if (CastSelf(
-                        "Health Funnel",
-                        () => 
-                    Me.HasAlivePet
-                        && Me.Pet.HealthFraction <= ( FunnelPetHp / 100 )
-                        && Me.HealthFraction >= ( FunnelPlayerHp / 100 )
-                    ))
-                    return true;
+                        if (GrimoriePet == WarlockGrimoriePet.CurrentMainPet) {
+                            switch (SelectedPet) {
+                                case WarlockPet.AutoSelect:
+                                    GrimoriePet = Target.IsCastingAndInterruptible() ? WarlockGrimoriePet.Felhunter : WarlockGrimoriePet.Doomguard;
+                                    break;
+                                case WarlockPet.SoulImp:
+                                    GrimoriePet = WarlockGrimoriePet.SoulImp;
+                                    break;
+                                case WarlockPet.Voidwalker:
+                                    GrimoriePet = WarlockGrimoriePet.Voidwalker;
+                                    break;
+                                case WarlockPet.Succubus:
+                                    GrimoriePet = WarlockGrimoriePet.Succubus;
+                                    break;
+                                case WarlockPet.Felhunter:
+                                    GrimoriePet = WarlockGrimoriePet.Felhunter;
+                                    break;
+                                case WarlockPet.Doomguard:
+                                    GrimoriePet = WarlockGrimoriePet.Doomguard;
+                                    break;
+                                case WarlockPet.Infernal:
+                                    GrimoriePet = WarlockGrimoriePet.Infernal;
+                                    break;
+                            }
+                        }
+
+                        switch (GrimoriePet) {
+                            case WarlockGrimoriePet.SoulImp:
+                                if (Cast("Grimorie: Imp"))
+                                    return true;
+                                break;
+                            case WarlockGrimoriePet.Voidwalker:
+                                if (Cast("Grimorie: Voidwalker"))
+                                    return true;
+                                break;
+                            case WarlockGrimoriePet.Succubus:
+                                if (Cast("Grimorie: Succubus"))
+                                    return true;
+                                break;
+                            case WarlockGrimoriePet.Felhunter:
+                                if (Cast("Grimorie: Felhunter"))
+                                    return true;
+                                break;
+                            case WarlockGrimoriePet.Doomguard:
+                                if (Cast("Grimorie: Doomguard"))
+                                    return true;
+                                break;
+                            case WarlockGrimoriePet.Infernal:
+                                if (Cast("Grimorie: Infernal"))
+                                    return true;
+                                break;
+                        }
+                    }
+                }
                     
                 if (CurrentBotName == "PvP" && CastFearIfFeasible())
                     return true;
@@ -620,15 +897,38 @@ namespace Avoloos
                 if (CastShadowfuryIfFeasible())
                     return true;
 
-                // Mana management
-                if (HasSpell("Life Tap") && AutomaticManaManagement && CastSelfPreventDouble(
-                        "Life Tap",
-                        () => Me.HealthFraction >= 0.65 && Me.Mana <= Me.MaxHealth * 0.16,
-                        20
-                    ))
+                if (DoHealingAndManaManagement())
                     return true;
                     
                 return HasGlobalCooldown();
+            }
+
+            bool DoHealingAndManaManagement()
+            {
+                if (CastSelf(
+                        "Ember Tap",
+                        () => Me.HealthFraction <= 0.35 && Me.GetPower(WoWPowerType.WarlockDestructionBurningEmbers) >= 1
+                    ))
+                    return true;
+                    
+                if (Cast(
+                        "Health Funnel",
+                        Me.Pet,
+                        () => Me.HasAlivePet
+                        && Me.Pet.HealthFraction <= ( FunnelPetHp / 100f )
+                        && Me.HealthFraction >= ( FunnelPlayerHp / 100f )
+                    ))
+                    return true;
+
+                // Mana management
+                if (HasSpell("Life Tap") && AutomaticManaManagement && CastSelfPreventDouble(
+                        "Life Tap",
+                        () => Me.HealthFraction >= ( AutomaticManamanagementPercentage / 100f ) && Me.Mana + Me.MaxHealth * 0.16 <= Me.MaxMana,
+                        2000
+                    ))
+                    return true;
+
+                return false;
             }
         }
     }

@@ -3,7 +3,6 @@ using ReBot.API;
 using System;
 using Avoloos.Warlock;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 
 namespace ReBot
 {
@@ -27,6 +26,12 @@ namespace ReBot
         /// </summary>
         [JsonProperty("DPS: Use Havoc on your Focus (if friendly on its Target")]
         public bool UseHavocOnFocus = true;
+
+        int ShadowBurnDamage {
+            get {
+                return (int) ( ( ( 315 / 100f ) * SpellPower ) * 1.24 );
+            }
+        }
 
         public AvoloosWarlockDestructionIcyVeins()
         {
@@ -64,8 +69,8 @@ namespace ReBot
 
                 if (!UseHavocOnFocus)
                     havocAdd = Adds
-                                .OrderByDescending(x => x.Health)
-                                .FirstOrDefault(x => x.HealthFraction <= 0.4f && x.IsInLoS && x.DistanceSquared <= SpellMaxRangeSq("Havoc")) ?? Adds.FirstOrDefault();
+                        .OrderByDescending(x => x.Health)
+                        .FirstOrDefault(x => x.HealthFraction <= HavocHealthPercentage / 100f && x.IsInLoS && x.DistanceSquared <= SpellMaxRangeSq("Havoc")) ?? Adds.FirstOrDefault();
 
                 if (havocAdd != null && havocAdd.IsFriendly)
                     havocAdd = havocAdd.Target;
@@ -138,7 +143,8 @@ namespace ReBot
                            Target.HealthFraction <= 0.2
                     && (
                         Me.HasAura("Dark Soul: Instability")
-                        || burningEmbers >= 1 // No cast time so 4 is good enough!
+                        || burningEmbers >= 3// No cast time so 4 is good enough!
+                        || Target.Health <= 2 * ShadowBurnDamage
                     )
                         
                 ))
@@ -149,7 +155,7 @@ namespace ReBot
                     "Immolate", 
                     () =>
                     !Target.HasAura("Immolate", true)
-                    || Target.AuraTimeRemaining("Immolate") <= 4.5f
+                    || ( Target.AuraTimeRemaining("Immolate") <= 3.5f && SpellCooldown("Cataclysm") > 1 )
                 ))
                 return;
 
@@ -179,6 +185,7 @@ namespace ReBot
             if (Cast("Conflagrate", () => SpellCharges("Conflagrate") >= 2))
                 return;
 
+            // Refresh with cataclysm if possible
             if (CastSpellOnBestAoETarget("Cataclysm"))
                 return;
                 

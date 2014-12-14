@@ -1,13 +1,8 @@
 using System;
 using ReBot.API;
 using Avoloos.Warlock;
-using ReBot.Helpers;
-using System.Security.Cryptography.X509Certificates;
-using Geometry;
 using System.Linq;
-using Mono.CSharp;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 
 namespace ReBot
 {
@@ -133,7 +128,7 @@ namespace ReBot
                         "Immolation Aura",
                         Me,
                         null,
-                        (u) => Me.HealthFraction > ( HellfireHealthPercentage / 100 )
+                        u => Me.HealthFraction > ( HellfireHealthPercentage / 100f )
                     ))
                     return true;
             }
@@ -271,10 +266,16 @@ namespace ReBot
                 return;
 
             // Then we do the rest of our dots
-            if (Cast(
+            if (CastSpellOnBestAoETarget(
                     "Cataclysm",
-                    () => ( HasMetamorphosis && !Target.HasAura("Doom", true) )
-                    || ( !HasMetamorphosis && !HasAura("Corruption", true) )
+                    u => ( HasMetamorphosis && !u.HasAura("Doom", true) ) || ( !HasMetamorphosis && !u.HasAura(
+                        "Corruption",
+                        true
+                    ) ),
+                    u => ( HasMetamorphosis && !u.HasAura("Doom", true) ) || ( !HasMetamorphosis && !u.HasAura(
+                        "Corruption",
+                        true
+                    ) )
                 ))
                 return;
 

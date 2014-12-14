@@ -657,7 +657,7 @@ namespace Avoloos
                     if (!HasAura("Grimoire of Sacrifice")) {
                         if (CastSelf(
                                 "Flames of Xoroth",
-                                () => !Me.HasAlivePet && Me.GetPower(WoWPowerType.WarlockDestructionBurningEmbers) >= 1
+                                () => !Me.HasAlivePet && Me.InCombat && Me.GetPower(WoWPowerType.WarlockDestructionBurningEmbers) >= 1
                             ))
                             return true;
 

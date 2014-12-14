@@ -157,6 +157,12 @@ namespace Avoloos
             public bool UseAdditionalDPSPet = true;
 
             /// <summary>
+            /// Should the bot use Terrorguard/Infernal on bosses only
+            /// </summary>
+            [JsonProperty("DPS: Use Terrorguard/Infernal/Grimorie of Service on Boss only")]
+            public bool UseAdditionalDPSPetBossOnly = false;
+
+            /// <summary>
             /// Should the bot use dark Soul
             /// </summary>
             [JsonProperty("DPS: Use Dark Soul automatically")]
@@ -252,7 +258,7 @@ namespace Avoloos
             protected WarlockBaseRotation()
             {
                 FearTrackingList = new List<ExpirableObject>();
-                Info("Warlock Combat Rotation - Version 1.2 by Avoloos.");
+                Info("Warlock Combat Rotation - Version 1.3 by Avoloos.");
             }
 
             /// <summary>
@@ -811,16 +817,16 @@ namespace Avoloos
                     if (CastOnTerrain(
                             HasSpell("Grimoire of Supremacy") ? "Summon Abyssal" : "Summon Infernal",
                             Target.Position,
-                            () => UseAdditionalDPSPet && ( Adds.Count >= 3 ) && IsBoss(Target)
+                            () => ( ( UseAdditionalDPSPet && Target.MaxHealth >= Me.MaxHealth && Target.IsElite() && !UseAdditionalDPSPetBossOnly ) || IsBoss(Target) ) && ( Adds.Count >= 3 )
                         ) || Cast(
                             HasSpell("Grimoire of Supremacy") ? "Summon Terrorguard" : "Summon Doomguard",
-                            () => UseAdditionalDPSPet && IsBoss(Target)
+                            () => ( UseAdditionalDPSPet && Target.MaxHealth >= Me.MaxHealth && Target.IsElite() && !UseAdditionalDPSPetBossOnly ) || IsBoss(Target)
                         ))
                         return true;
                 }
 
                 if (HasSpell("Grimorie: Imp")) {
-                    bool GrimorieCondition = ( Target.MaxHealth >= Me.MaxHealth && Target.IsElite() ) || IsBoss(Target);
+                    bool GrimorieCondition = ( UseAdditionalDPSPet && Target.MaxHealth >= Me.MaxHealth && Target.IsElite() && !UseAdditionalDPSPetBossOnly ) || IsBoss(Target);
                     if (GrimorieCondition) {
                         var GrimoriePet = SelectedGrimoriePet;
 

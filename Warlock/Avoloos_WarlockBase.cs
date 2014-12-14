@@ -315,7 +315,8 @@ namespace Avoloos
                 if (spell != null)
                     return CastSelfPreventDouble(
                         spell,
-                        () => !Me.HasAlivePet || Me.Pet != null && Me.Pet.DisplayId != displayId
+                        () => !Me.HasAlivePet || Me.Pet != null && Me.Pet.DisplayId != displayId,
+                        5000 // 5 seconds to be sure it spawned on slow systems or serverlag
                     );
 
                 return false;

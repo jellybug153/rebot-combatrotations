@@ -199,6 +199,12 @@ namespace Avoloos
             public bool AutomaticManaManagement = true;
 
             /// <summary>
+            /// Life Tap Player HP condition in %
+            /// </summary>
+            [JsonProperty("General: Life of Player in % until Life Tap gets used")]
+            public int AutomaticManamanagementPercentage = 65;
+
+            /// <summary>
             /// Defines the factor of HP a unit has to have to be counted as a boss.
             /// </summary>
             [JsonProperty("General/DPS: Percentual factor of a Targets MaxHP in relation to Players MaxHP to be valued as Bossencounter")]
@@ -885,7 +891,7 @@ namespace Avoloos
                 // Mana management
                 if (HasSpell("Life Tap") && AutomaticManaManagement && CastSelfPreventDouble(
                         "Life Tap",
-                        () => Me.HealthFraction >= 0.65 && Me.Mana <= Me.MaxHealth * 0.16,
+                        () => Me.HealthFraction >= ( AutomaticManamanagementPercentage / 100f ) && Me.Mana + Me.MaxHealth * 0.16 <= Me.MaxMana,
                         2000
                     ))
                     return true;

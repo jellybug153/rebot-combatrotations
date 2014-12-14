@@ -246,7 +246,7 @@ namespace Avoloos
             protected WarlockBaseRotation()
             {
                 FearTrackingList = new List<ExpirableObject>();
-                Info("Warlock Combat Rotation - Version 1.0 by Avoloos.");
+                Info("Warlock Combat Rotation - Version 1.1 by Avoloos.");
             }
 
             /// <summary>
